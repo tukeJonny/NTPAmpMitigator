@@ -1,0 +1,6 @@
+---
+- name: apache2
+  hosts: apache2
+  become: yes
+  roles:
+    - apache2

@@ -1,0 +1,6 @@
+---
+- name: zabbix-agent
+  hosts: zabbix-agent
+  become: yes
+  roles:
+    - zabbix-agent

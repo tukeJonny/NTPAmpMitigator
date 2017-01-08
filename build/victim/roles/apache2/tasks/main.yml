@@ -1,0 +1,11 @@
+---
+- name: Install latest httpd
+  yum: name=httpd state=latest
+  tags:
+    - apache2
+  notify: restart httpd
+
+- name: export port 80
+  firewalld: permanent=true port=80/tcp state=enabled immediate=true
+  tags:
+    - apache2
