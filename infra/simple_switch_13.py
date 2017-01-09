@@ -13,6 +13,8 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import time
+import multiprocessing
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
@@ -26,6 +28,7 @@ from ryu.lib.packet import ether_types
 from ryu.ofproto import ether
 
 from utils import is_ipv4_belongs_to_network
+from utils import FlowRule, FlowRuleManager
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -40,7 +43,9 @@ class SimpleSwitch13(app_manager.RyuApp):
             #'eth_dst': None,
         }
         self.mac_to_port = {}
+        self.flow_rule_manager = FlowRuleManager()
 
+        self.SLEEP_TIME = 20
         self.MITIGATE_MODE = False
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -59,9 +64,48 @@ class SimpleSwitch13(app_manager.RyuApp):
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0, match, actions)
+        self.add_flow(datapath, 0, match, None, actions, any_match=True)
 
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None):
+    def del_any_match_flow_rule(self, datapath):
+        parser = datapath.ofproto_parser
+        match = parser.OFPMatch()
+
+        self.del_flow(datapath, match)
+
+    def mitigate_entry(self, datapath):
+        self.MITIGATE_MODE = True
+        self.logger.info("[*] Mitigate Entry")
+        self.del_any_match_flow_rule(datapath)
+
+        # Spawn mitigate_exit
+        self.logger.info("[+] Spawn mitigate_exit process")
+        p = multiprocessing.Process(target=self.mitigate_exit)
+        p.start()
+
+    def mitigate_exit(self):
+        time.sleep(self.SLEEP_TIME)
+
+        #Refresh
+        ##Delete flow rule (any match rule exclude)
+        del_flow_gen = self.flow_rule_manager.del_flow_rule_generator()
+        for datapath, msg in del_flow_gen:
+            datapath.send_msg(msg)
+
+        ##Add flow rule (any match rule include)
+        add_flow_gen = self.flow_rule_manager.add_flow_rule_generator()
+        for datapath,priority,match,actions,buffer_id in add_flow_gen:
+            self.add_flow(datapath,priority,match,actions,buffer_id=buffer_id)
+
+        self.logger.info("[-] Mitigate Exit")
+        self.MITIGATE_MODE = False
+
+    def add_flow(self, datapath, priority, match, match_config, actions, buffer_id=None, any_match=False):
+        if not any_match:
+            # Register FlowRule to FlowRuleManager
+            flow_rule = FlowRule(datapath, priority, match_config, actions, buffer_id)
+            self.flow_rule_manager.register(flow_rule)
+
+        # Add Flow
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -75,6 +119,17 @@ class SimpleSwitch13(app_manager.RyuApp):
             mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
                                     match=match, instructions=inst)
         datapath.send_msg(mod)
+
+    def del_flow(self, datapath, match, cookie=0):
+        ofproto = datapath.ofproto
+
+        msg = parser.OFPFlowMod(
+            datapath=datapath,
+            match=match,
+            cookie=cookie,
+            command=ofproto.OFPFC_DELETE
+        )
+        datapath.send_msg(msg)
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
@@ -103,8 +158,8 @@ class SimpleSwitch13(app_manager.RyuApp):
                 self.logger.info("[!!] filter packet from {}".format(ipv4_src))
                 if not self.MITIGATE_MODE:
                     # FlowMod Remove ANY Packet-In Entry
-                    # self.MITIGATE_MODE = True
                     self.logger.info("[*] MITIGATE MODE ON")
+                    self.mitigate_entry(datapath)
                 return
 
         dst = eth.dst

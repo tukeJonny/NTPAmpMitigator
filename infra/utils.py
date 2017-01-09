@@ -56,8 +56,7 @@ class FlowRuleManager(object):
             actions,
         )
 
-
-    def mitigate_entry_generator(self, datapath):
+    def del_flow_rule_generator(self, datapath):
         """
         datapath.send(:return:)
         :param datapath:
@@ -78,7 +77,7 @@ class FlowRuleManager(object):
             )
             yield (datapath, msg)
 
-    def mitigate_exit_generator(self):
+    def add_flow_rule_generator(self):
         """
         self.add_flow(**:return:)
         :return:
@@ -107,10 +106,6 @@ class FlowRuleManager(object):
             )
 
         self.any_datapath = None #Reset
-
-
-
-
 
 
 #packet_in_handlerにて、受け取ったパケットのipv4がsubnetに属するか調べるのに必要
