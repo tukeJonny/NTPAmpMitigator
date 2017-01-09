@@ -41,6 +41,8 @@ class SimpleSwitch13(app_manager.RyuApp):
         }
         self.mac_to_port = {}
 
+        self.MITIGATE_MODE = False
+
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
@@ -99,6 +101,10 @@ class SimpleSwitch13(app_manager.RyuApp):
             ipv4_src = pkt_ipv4.src.decode("utf-8")
             if not is_ipv4_belongs_to_network(ipv4_src, self.subnet):
                 self.logger.info("[!!] filter packet from {}".format(ipv4_src))
+                if not self.MITIGATE_MODE:
+                    # FlowMod Remove ANY Packet-In Entry
+                    # self.MITIGATE_MODE = True
+                    self.logger.info("[*] MITIGATE MODE ON")
                 return
 
         dst = eth.dst
