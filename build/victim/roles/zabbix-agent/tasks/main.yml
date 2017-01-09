@@ -1,0 +1,34 @@
+---
+- name: put zabbix-release rpm
+  file:
+    src={{ zabbix-release-rpm }}
+    dest=/tmp/zabbix-release-3.0-1
+  tags:
+    - zabbix-agent
+
+- name: Install rpm
+  yum: name={{ zabbix-release-rpm }}
+  tags:
+    - zabbix-agent
+
+- name: Install zabbix-agent
+  yum: name=zabbix-agent state=latest
+  tags:
+    - zabbix-agent
+
+- name: put zabbix_agentd.conf
+  file:
+    src=zabbix_agentd.conf
+    dest=/etc/zabbix/zabbix_agentd.conf
+  tags:
+    - zabbix-agent
+
+- name: expose port 10050
+  firewalld: permanent=true port=10050/tcp state=enabled immediate=true
+  tags:
+    - zabbix-agent
+
+- name: reboot zabbix-agent
+  service: name=zabbix-agent state=started enabled=yes
+  tags:
+    - zabbix-agent
