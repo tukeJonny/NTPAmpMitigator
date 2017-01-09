@@ -10,17 +10,104 @@ import struct
 import ipaddress
 
 class FlowRule(object):
-    def __init__(self, datapath, priority, match, actions, ):
-        pass
+    def __init__(self, datapath, priority, match_config, actions, buffer_id=None):
+        self._datapath = datapath
+        self._priority = priority
+        self._buffer_id = buffer_id
+
+        self._match_config = match_config # dict
+        self._actions = actions
+
+    @property
+    def datapath(self):
+        return self._datapath
+    @property
+    def priority(self):
+        return self._priority
+    @property
+    def buffer_id(self):
+        return self._buffer_id
+    @property
+    def match_config(self):
+        return self._match_config
+    @property
+    def actions(self):
+        return self._actions
 
 class FlowRuleManager(object):
     def __init__(self):
-        self.matches = {
-            'match': []
-        }
+        self.datapath = None
+        self.flow_rules = []
 
-    def register_match(self, config):
-        self.matches['match'].append(config)
+    def register(self, flow_rule):
+        self.flow_rules.append(flow_rule)
+
+    def create_any_match_flow_rule(self):
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        match = parser.OFPMatch()
+        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                                          ofproto.OFPCML_NO_BUFFER)]
+
+        return (
+            self.datapath,
+            0,
+            match,
+            actions,
+        )
+
+
+    def mitigate_entry_generator(self, datapath):
+        """
+        datapath.send(:return:)
+        :param datapath:
+        :return:
+        """
+        self.datapath = datapath
+        for flow_rule in self.flow_rules:
+            datapath = flow_rule.datapath
+            ofproto = datapath.ofproto
+            parser = datapath.ofproto_parser
+
+            match = parser.OFPMatch(**flow_rule.match_config)
+            msg = parser.OFPFlowMod(
+                datapath=datapath,
+                match=match,
+                cookie=0,
+                command=ofproto.OFPFC_DELETE
+            )
+            yield (datapath, msg)
+
+    def mitigate_exit_generator(self):
+        """
+        self.add_flow(**:return:)
+        :return:
+        """
+        if self.any_datapath is None:
+            raise ValueError("Controller is not MITIGATE MODE!")
+
+        #First, add ANY Match Flow Entry
+        yield self.create_any_match_flow_rule()
+
+        for flow_rule in self.flow_rules:
+            datapath = flow_rule.datapath
+            ofproto = datapath.ofproto
+            parser = datapath.ofproto_parser
+
+            match = parser.OFPMatch(**flow_rule.match_config)
+            actions = flow_rule.actions
+            buffer_id = flow_rule.buffer_id
+
+            yield (
+                datapath,
+                1,
+                match,
+                actions,
+                buffer_id
+            )
+
+        self.any_datapath = None #Reset
+
 
 
 

@@ -3,6 +3,7 @@
 import pprint
 from operator import attrgetter
 
+#あまりこちらにはmitigate要素を入れないで、import文だけで通常のスイッチと切り替えられるように
 #from ryu.app import simple_switch_13
 import simple_switch_13 #my custom simple_switch_13
 from ryu.lib import hub
