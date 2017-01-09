@@ -3,7 +3,8 @@
 import pprint
 from operator import attrgetter
 
-from ryu.app import simple_switch_13
+#from ryu.app import simple_switch_13
+import simple_switch_13 #my custom simple_switch_13
 from ryu.lib import hub
 from ryu.controller import ofp_event
 from ryu.controller.handler import (
@@ -23,9 +24,7 @@ class NTPAmpMitigator(simple_switch_13.SimpleSwitch13):
             'ipv4_src': ("10.0.0.0", "255.0.0.0"),
         }
 
-        self.monitor_thread = hub.spawn(self._monitor)
-
-        #self.flag = True
+        #self.monitor_thread = hub.spawn(self._monitor)
 
         self.MITIGATE_RULE_EXISTS = False
 
@@ -43,14 +42,8 @@ class NTPAmpMitigator(simple_switch_13.SimpleSwitch13):
     def _monitor(self):
         while True:
             for dp in self.datapaths.values():
-                # if self.flag:
                 self.logger.info("[+] Add Mitigate Rule!")
                 self._add_mitigate_rule(dp)
-                # self.flag = False
-                # else:
-                #     self.logger.info("[+] Del Mitigate Rule!")
-                #     #self._del_mitigate_rule(dp)
-                #     self.flag = True
             hub.sleep(10)
             self.logger.info("[-] Surely, Mitigate rule is expired!")
             hub.sleep(10)
