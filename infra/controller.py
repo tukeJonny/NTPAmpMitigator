@@ -17,9 +17,16 @@ class NTPAmpMitigator(simple_switch_13.SimpleSwitch13):
     def __init__(self, *args, **kwargs):
         super(NTPAmpMitigator, self).__init__(*args, **kwargs)
         self.datapaths = {}
-        self.subnet = ("10.0.0.0", "255.0.0.0")
+        self.mitigate_match_rule = {
+            'ipv4_src': "10.0.0.0",
+            'nw_src_mask': 8
+        }
 
         self.monitor_thread = hub.spawn(self._monitor)
+
+        self.flag = True
+
+        self.MITIGATE_RULE_EXISTS = False
 
     @set_ev_cls(ofp_event.EventOFPStateChange, [MAIN_DISPATCHER, DEAD_DISPATCHER])
     def _state_change_handler(self, ev):
@@ -35,7 +42,14 @@ class NTPAmpMitigator(simple_switch_13.SimpleSwitch13):
     def _monitor(self):
         while True:
             for dp in self.datapaths.values():
-                self._request_stats(dp)
+                if self.flag:
+                    self.logger.info("[+] Add Mitigate Rule!")
+                    self._add_mitigate_rule(dp)
+                    self.flag = False
+                else:
+                    self.logger.info("[+] Del Mitigate Rule!")
+                    self._del_mitigate_rule(dp)
+                    self.flag = True
             hub.sleep(10)
 
     def _request_stats(self, datapath):
@@ -64,12 +78,26 @@ class NTPAmpMitigator(simple_switch_13.SimpleSwitch13):
             self.logger.info("[+] Port Stats below")
             self.logger.info(stat.__dict__)
 
-    def _add_mitigate_flow(self, datapath):
+    def _add_mitigate_rule(self, datapath):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        match = parser.OFPMatch(ipv4_src=self.subnet)
-        actions = [
-            parser.OFPAction
-        ]
+        match = parser.OFPMatch(**self.mitigate_match_rule)
+        actions = []
         self.add_flow(datapath, 1, match, actions)
+
+    def _del_mitigate_rule(self, datapath):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        match = parser.OFPMatch(**self.mitigate_match_rule)
+        msg = parser.OFPFlowMod(
+            datapath=datapath,
+            match=match,
+            cookie=0,
+            command=ofproto.OFPFC_DELETE
+        )
+        datapath.send_msg(msg)
+
+
+
