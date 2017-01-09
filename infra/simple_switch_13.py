@@ -43,7 +43,7 @@ class SimpleSwitch13(app_manager.RyuApp):
             #'eth_dst': None,
         }
         self.mac_to_port = {}
-        self.flow_rule_manager = FlowRuleManager()
+        self.flow_rule_manager = FlowRuleManager() # 全てにマッチするルール以外を管理
 
         self.SLEEP_TIME = 20
         self.MITIGATE_MODE = False
@@ -94,7 +94,9 @@ class SimpleSwitch13(app_manager.RyuApp):
         ##Add flow rule (any match rule include)
         add_flow_gen = self.flow_rule_manager.add_flow_rule_generator()
         for datapath,priority,match,actions,buffer_id in add_flow_gen:
-            self.add_flow(datapath,priority,match,actions,buffer_id=buffer_id)
+            # This rule is not match any packet. but this entry is refresh entry.
+            # リフレッシュで追加するだけなので、Managerに追加する必要はない
+            self.add_flow(datapath,priority,match,None,actions,buffer_id=buffer_id, any_match=True)
 
         self.logger.info("[-] Mitigate Exit")
         self.MITIGATE_MODE = False
