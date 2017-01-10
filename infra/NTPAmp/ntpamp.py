@@ -19,14 +19,14 @@ class NTPAmp(object):
         this is equals ntpdate
         """
         ntpconf = {
-            'leap': 'unknown (clock unsynchronized)',
+            'leap': 3, #"unknown (clock unsynchronized)",
             'version': 4L,
             'stratum': 0L,
             'poll': 3L,
             'precision': 250L,
             'delay': 1.0,
             'dispersion': 1.0,
-            'ref_id': '',
+            #'ref_id': '',
             'orig': 0.0,
             'sent': datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
         }
