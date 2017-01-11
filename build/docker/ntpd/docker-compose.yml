@@ -1,0 +1,5 @@
+ntpd:
+  image: sosuncer/ntpd:1
+  build: ../../../Dockerfiles/ntpd/Dockerfile
+  ports:
+    - "123/udp"
