@@ -97,7 +97,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         p.start()
 
     def mitigate_exit(self):
-        time.sleep(self.SLEEP_TIME)
+        time.sleep(self.SLEEP_TIME) # Keep MITIGATE MODE
 
         #Refresh
         ##Delete flow rule (any match rule exclude)

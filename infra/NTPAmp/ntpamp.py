@@ -33,6 +33,11 @@ class NTPAmp(object):
         self.logger.addHandler(ch)
 
     def read_entries(self, path):
+        """
+        Read NTP Servers entry from a file
+        :param path: file path
+        :return:
+        """
         with open(path) as f:
             lines = map(lambda l: l.rstrip(), f.readlines())
             entries = map(lambda l: tuple(l.split(' ')), lines)
