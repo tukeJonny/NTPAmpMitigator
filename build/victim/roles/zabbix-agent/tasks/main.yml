@@ -23,6 +23,12 @@
   tags:
     - zabbix-agent
 
+- name: set config permission
+  file: dest={{ item }} owner=zabbix group=zabbix recurse=yes
+  with_items:
+    - /var/log/zabbix
+    - /etc/zabbix
+
 - name: expose port 10050
   firewalld: permanent=true port=10050/tcp state=enabled immediate=true
   tags:

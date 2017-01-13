@@ -77,8 +77,16 @@ class MitigateSwitch13(app_manager.RyuApp):
             'eth_dst':eth_dest
         }
         match = parser.OFPMatch(**match_config)
-
+        self.logger.info("[+] add arp flow rule")
         self.add_flow(datapath, 1, match, match_config, actions)
+
+    def add_mitigate_flow_rule(self, datapath):
+        parser = datapath.ofproto_parser
+        match = parser.OFPMatch()
+        actions = [] #Drop
+
+        self.logger.info("[+] add mitigate flow rule")
+        self.add_flow(datapath, 0, match, None, actions, any_match=True)
 
     def del_any_match_flow_rule(self, datapath):
         parser = datapath.ofproto_parser
@@ -90,24 +98,34 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.MITIGATE_MODE = True
         self.logger.info("[*] Mitigate Entry")
         self.del_any_match_flow_rule(datapath)
+        self.add_mitigate_flow_rule(datapath)
 
         # Spawn mitigate_exit
         self.logger.info("[+] Spawn mitigate_exit process")
-        p = multiprocessing.Process(target=self.mitigate_exit)
+        p = multiprocessing.Process(target=self.mitigate_exit, args=(datapath,))
         p.start()
 
-    def mitigate_exit(self):
+    def mitigate_exit(self, datapath):
         time.sleep(self.SLEEP_TIME) # Keep MITIGATE MODE
+
+        # delete mitigate flow rule
+        self.logger.info("[-] Delete any match flow rule")
+        self.del_any_match_flow_rule(datapath)
 
         #Refresh
         ##Delete flow rule (any match rule exclude)
-        del_flow_gen = self.flow_rule_manager.del_flow_rule_generator()
+        self.logger.info("[-] Delete all flow rules")
+        del_flow_gen = self.flow_rule_manager.del_flow_rule_generator(datapath)
         for datapath, msg in del_flow_gen:
             datapath.send_msg(msg)
 
+        self.logger.info("[+] Add all flow rules")
         ##Add flow rule (any match rule include)
         add_flow_gen = self.flow_rule_manager.add_flow_rule_generator()
-        for datapath,priority,match,actions,buffer_id in add_flow_gen:
+        datapath, priority, match, actions = add_flow_gen.next()
+        self.add_flow(datapath, priority, match, None, actions, any_match=True)
+        for info in add_flow_gen:#datapath,priority,match,actions,buffer_id in add_flow_gen:
+            datapath, priority,match,actions,buffer_id = info
             # This rule is not match any packet. but this entry is refresh entry.
             # リフレッシュで追加するだけなので、Managerに追加する必要はない
             self.add_flow(datapath,priority,match,None,actions,buffer_id=buffer_id, any_match=True)

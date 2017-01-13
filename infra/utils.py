@@ -82,7 +82,7 @@ class FlowRuleManager(object):
         self.add_flow(**:return:)
         :return:
         """
-        if self.any_datapath is None:
+        if self.datapath is None:
             raise ValueError("Controller is not MITIGATE MODE!")
 
         #First, add ANY Match Flow Entry
@@ -105,7 +105,7 @@ class FlowRuleManager(object):
                 buffer_id
             )
 
-        self.any_datapath = None #Reset
+        self.datapath = None #Reset
 
 
 #packet_in_handlerにて、受け取ったパケットのipv4がsubnetに属するか調べるのに必要

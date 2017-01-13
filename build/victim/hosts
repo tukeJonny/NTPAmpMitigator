@@ -1,12 +1,12 @@
 [servers]
-192.168.xxx.xxx
+192.168.179.15
 
 [apache2]
-192.168.xxx.xxx
+192.168.179.15
 
 [zabbix-agent]
-192.168.xxx.xxx
+192.168.179.15
 
 [all:vars]
 ansible_ssh_user=root
-ansible_ssh_port=xxx
+ansible_ssh_port=22
