@@ -7,7 +7,7 @@ import datetime
 from scapy.all import*
 
 class NTPAmp(object):
-    def __init__(self, fpath, victim, nthreads, sport, dport):
+    def __init__(self, fpath, victim, nthreads, sport, dport, warmup):
         # IPs
         self.ntpservs = None
         self.read_entries(fpath)
@@ -24,7 +24,11 @@ class NTPAmp(object):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        ch = logging.StreamHandler()
+        ch = None
+        if warmup:
+            ch = logging.FileHandler(filename='warmup.log')
+        else:
+            ch = logging.FileHandler(filename='attack.log')
         ch.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -129,7 +133,7 @@ def argument_parse():
 
 if __name__ == '__main__':
     args = argument_parse()
-    ntpamp = NTPAmp(args.fpath, args.victim, args.nthreads, args.sport, args.dport)
+    ntpamp = NTPAmp(args.fpath, args.victim, args.nthreads, args.sport, args.dport, args.warmup)
     if args.warmup:
         ntpamp.warmup()
     else:
