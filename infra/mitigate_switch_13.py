@@ -47,7 +47,7 @@ class MitigateSwitch13(app_manager.RyuApp):
 
 
         self.NAT_IN_PORT = 5 # h1 h2 h3 h4 nat
-                                #              |_this
+                                #           |_this
         self.SLEEP_TIME = 20
         self.MITIGATE_MODE = False
 

