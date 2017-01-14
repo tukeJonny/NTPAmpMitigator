@@ -139,7 +139,7 @@ class MitigateSwitch13(app_manager.RyuApp):
 
     def add_table_miss_check_packetin_flow_rule(self, datapath):
         parser = datapath.ofproto_parser
-        match = parser.OFPMatch()
+        match = parser.OFPMatch(**self.detect_match_rule)
         _,priority,_,_,actions = self.create_table_miss_flow_rule(datapath)
         priority = 1
         self.add_flow(datapath, priority, match, None, actions)
