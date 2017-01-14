@@ -60,6 +60,8 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.SLEEP_TIME = 60
         self.MITIGATE_MODE = False
 
+    ##### Switch feature & Flow stats reply Handler #####
+
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
@@ -86,6 +88,8 @@ class MitigateSwitch13(app_manager.RyuApp):
             self.logger.info("[+] Flow Stats below")
             self.logger.info(stat.__dict__)
 
+    ##### Utils #####
+
     def get_datapathes(self):
         datapathes = [dp for _, dp in self.dpset.get_all()]
         return datapathes
@@ -106,6 +110,8 @@ class MitigateSwitch13(app_manager.RyuApp):
             actions,
         )
 
+    ##### Delete all #####
+
     def del_all_flow_rule(self, datapath):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
@@ -116,6 +122,8 @@ class MitigateSwitch13(app_manager.RyuApp):
                                 ofproto.OFPP_ANY,
                                 ofproto.OFPG_ANY)
         datapath.send_msg(mod)
+
+    ##### ARP Rule #####
 
     def add_allow_arp_flow_rule(self, datapath, in_port, eth_dest, actions):
         parser = datapath.ofproto_parser
@@ -128,6 +136,8 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         self.logger.info("[+] add arp flow rule")
         self.add_flow(datapath, 2, match, match_config, actions)
+
+    ##### Add & Delete table-miss entry #####
 
     def add_table_miss_drop_flow_rule(self, datapath):
         parser = datapath.ofproto_parser
@@ -155,6 +165,8 @@ class MitigateSwitch13(app_manager.RyuApp):
         match = parser.OFPMatch()
 
         self.del_flow(datapath, match)
+
+    ##### Refresh #####
 
     def refresh(self, delete_all=False, add_mitigate_rule=False):
         self.logger.info("[*] Refreshing flow entry...")
@@ -191,15 +203,12 @@ class MitigateSwitch13(app_manager.RyuApp):
         for datapath,priority,match,actions,buffer_id in add_flow_gen:
             self.add_flow(datapath,priority,match,None,actions,buffer_id=buffer_id, not_manage=True)
 
+    ##### Mitigate Entry & Exit #####
+
     def mitigate_entry(self, datapath):
         self.MITIGATE_MODE = True
         self.logger.info("[*] Mitigate Entry")
 
-        # self.logger.info("[-] Delete table-miss Packet-In rule")
-        # self.del_table_miss_flow_rule(datapath)
-        #
-        # self.logger.info("[+] Add table_miss Drop rule")
-        # self.add_table_miss_drop_flow_rule(datapath)
         self.logger.info("[!] Refresh flow rules")
         self.refresh(delete_all=True, add_mitigate_rule=True)
 
@@ -209,40 +218,17 @@ class MitigateSwitch13(app_manager.RyuApp):
         # Spawn mitigate_exit
         # 03:54:40
         self.logger.info("[+] Spawn mitigate_exit process")
-        # p = multiprocessing.Process(target=self.mitigate_exit, args=(datapath,))
-        # p.start()
         hub.spawn(self.mitigate_exit, datapath)
-        #self.mitigate_exit(datapath)
 
     def mitigate_exit(self, datapath):
         #hard_timeoutとギリギリのタイミングになるので、+5ぐらいしておく
         time.sleep(self.SLEEP_TIME+5)
 
-        # delete mitigate flow rule
-        #03:38:00
-        #self.logger.info("[-] Delete table_miss flow rule")
-        #self.del_table_miss_flow_rule(datapath)
-        #time.sleep(10)
-
-        # #Refresh
-        # ##Delete flow rule (table-miss rule exclude)
-        # self.logger.info("[-] Delete all flow rules")
-        # del_flow_gen = self.flow_rule_manager.del_flow_rule_generator(datapath)
-        # for datapath, msg in del_flow_gen:
-        #     datapath.send_msg(msg)
-        #
-        # self.logger.info("[+] Add all flow rules")
-        # ##Add flow rule (table-miss rule include)
-        # add_flow_gen = self.flow_rule_manager.add_flow_rule_generator()
-        # datapath, priority, match, actions = add_flow_gen.next()
-        # self.add_flow(datapath, priority, match, None, actions, not_manage=True)
-        # for info in add_flow_gen:#datapath,priority,match,actions,buffer_id in add_flow_gen:
-        #     datapath, priority,match,actions,buffer_id = info
-        #     # リフレッシュで追加するだけなので、Managerに追加する必要はない
-        #     self.add_flow(datapath,priority,match,None,actions,buffer_id=buffer_id, not_manage=True)
         self.refresh()
         self.logger.info("[-] Mitigate Exit")
         self.MITIGATE_MODE = False
+
+    ##### Add & Delete flow entry #####
 
     def add_flow(self, datapath, priority, match, match_config, actions, buffer_id=None, not_manage=False, no_buffer=True, hard_timeout=0):
         if not not_manage:
@@ -285,6 +271,8 @@ class MitigateSwitch13(app_manager.RyuApp):
             #buffer_id=ofproto.OFPCML_NO_BUFFER
         )
         datapath.send_msg(msg)
+
+    ##### Packet-In Handler #####
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
