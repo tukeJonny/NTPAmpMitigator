@@ -170,7 +170,7 @@ class MitigateSwitch13(app_manager.RyuApp):
 
     def refresh(self, delete_all=False, add_mitigate_rule=False):
         self.logger.info("[*] Refreshing flow entry...")
-        time.sleep(20)
+        #time.sleep(20)
         if delete_all:
             self.logger.info("[-] Delete all flow rules")
             for dp in self.get_datapathes():
@@ -183,7 +183,7 @@ class MitigateSwitch13(app_manager.RyuApp):
             for dp in self.get_datapathes():
                 self.del_all_flow_rule(dp)
 
-        time.sleep(20)
+        #time.sleep(20)
         if add_mitigate_rule:
             self.logger.info("[+] Add table-miss Drop entry")
             for dp in self.get_datapathes():
@@ -197,7 +197,7 @@ class MitigateSwitch13(app_manager.RyuApp):
 
                 self.add_flow(*self.create_table_miss_flow_rule(datapath, actions), not_manage=True)
 
-        time.sleep(20)
+        #time.sleep(20)
         self.logger.info("[+] Add all flow rules")
         add_flow_gen = self.flow_rule_manager.add_flow_rule_generator()
         for datapath,priority,match,actions,buffer_id in add_flow_gen:
@@ -309,6 +309,17 @@ class MitigateSwitch13(app_manager.RyuApp):
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
 
+        # Out port
+        if dst in self.mac_to_port[dpid]:
+            out_port = self.mac_to_port[dpid][dst]
+        else:
+            out_port = ofproto.OFPP_FLOOD
+
+        actions = [parser.OFPActionOutput(out_port)]
+
+        # ARP
+        self.add_allow_arp_flow_rule(datapath, in_port, dst, actions)
+
         # Filtering 2
         #NAT側から通ってきたパケットはフィルタリングしない
         #IPv4アドレスが偽装されていると検知した場合、MITIGATE ENTRYする
@@ -322,14 +333,6 @@ class MitigateSwitch13(app_manager.RyuApp):
                     self.logger.info("[*] MITIGATE MODE ON")
                     self.mitigate_entry(datapath)
                 return
-
-        # Out port
-        if dst in self.mac_to_port[dpid]:
-            out_port = self.mac_to_port[dpid][dst]
-        else:
-            out_port = ofproto.OFPP_FLOOD
-
-        actions = [parser.OFPActionOutput(out_port)]
 
         # install a flow to avoid packet_in next time
         if out_port != ofproto.OFPP_FLOOD:
@@ -345,15 +348,11 @@ class MitigateSwitch13(app_manager.RyuApp):
             # flow_mod & packet_out
             if msg.buffer_id != ofproto.OFP_NO_BUFFER:
                 self.logger.info("[+] add_flow with buffer_id")
-                #ARP
-                self.add_allow_arp_flow_rule(datapath, in_port, dst, actions)
                 #IP Check
                 self.add_flow(datapath, 2, match, match_rule, actions, msg.buffer_id)
                 return
             else:
                 self.logger.info("[+] add_flow")
-                #ARP
-                self.add_allow_arp_flow_rule(datapath, in_port, dst, actions)
                 #IP Check
                 self.add_flow(datapath, 2, match, match_rule, actions)
         else:
