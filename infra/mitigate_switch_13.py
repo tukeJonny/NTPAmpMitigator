@@ -97,7 +97,9 @@ class MitigateSwitch13(app_manager.RyuApp):
     def mitigate_entry(self, datapath):
         self.MITIGATE_MODE = True
         self.logger.info("[*] Mitigate Entry")
+        self.logger.info("[-] Delete AnyMatch Packet-In rule")
         self.del_any_match_flow_rule(datapath)
+        self.logger.info("[+] Add AnyMatch Drop rule")
         self.add_mitigate_flow_rule(datapath)
 
         # Spawn mitigate_exit

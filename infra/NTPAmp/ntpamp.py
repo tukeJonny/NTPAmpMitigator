@@ -137,11 +137,11 @@ def argument_parse():
             attack.log   ... attack with this script logs
             warmpup.log  ... warmup with this script logs
     """
-    parser = argparse.ArgumentParser(description=examples)
+    parser = argparse.ArgumentParser(description=examples, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-w', '--warmup', action='store_true', help='Execute warmup')
     parser.add_argument('-s', '--single', action='store_true', help='Execute single get_monlist')
     parser.add_argument('-v', '--victim',  type=str, help='Victim IP Address')
-    parser.add_argument('-t', '--time' type=int, help='time to calculate for attacking (sec. default 60 sec.)', default=60)
+    parser.add_argument('-t', '--time', type=int, help='time to calculate for attacking (sec. default 60 sec.)', default=60)
     parser.add_argument('-n', '--nthreads',type=int, help='Number of threads (default 1)', default=1)
     parser.add_argument('-f', '--fpath', type=str, help='NTP Servers entry file path (default ./ntpservs.txt)', default='./ntpservs.txt')
     parser.add_argument('--sport', type=int, help='Source port. this port is victim port. (default 8080)', default=8080)
