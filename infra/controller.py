@@ -1,19 +1,13 @@
 #-*- coding: utf-8 -*-
 
-import pprint
-from operator import attrgetter
-
-#あまりこちらにはmitigate要素を入れないで、import文だけで通常のスイッチと切り替えられるように
 #from ryu.app import simple_switch_13
 import mitigate_switch_13#my custom simple_switch_13
-from ryu.lib import hub
 from ryu.controller import ofp_event
 from ryu.controller.handler import (
     MAIN_DISPATCHER,
     DEAD_DISPATCHER
 )
 from ryu.controller.handler import set_ev_cls
-from ryu.ofproto import ether
 
 class NTPAmpMitigator(mitigate_switch_13.MitigateSwitch13):
 
