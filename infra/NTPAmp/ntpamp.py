@@ -32,9 +32,9 @@ class NTPAmp(object):
 
         ch = None
         if warmup:
-            ch = logging.FileHandler(filename='warmup.log')
+            ch = logging.FileHandler(filename='warmup.log', mode='w')
         else:
-            ch = logging.FileHandler(filename='attack.log')
+            ch = logging.FileHandler(filename='attack.log', mode='w')
         ch.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

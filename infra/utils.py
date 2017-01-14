@@ -99,7 +99,7 @@ class FlowRuleManager(object):
 
             yield (
                 datapath,
-                1,
+                2,
                 match,
                 actions,
                 buffer_id
