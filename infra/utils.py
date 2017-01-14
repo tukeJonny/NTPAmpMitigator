@@ -36,33 +36,36 @@ class FlowRule(object):
 
 class FlowRuleManager(object):
     def __init__(self):
-        self.datapath = None
+        self._datapath = None
         self.flow_rules = []
+
+    @property
+    def datapath(self, datapath):
+        self._datapath = datapath
 
     def register(self, flow_rule):
         self.flow_rules.append(flow_rule)
 
     def create_any_match_flow_rule(self):
-        ofproto = self.datapath.ofproto
-        parser = self.datapath.ofproto_parser
+        ofproto = self._datapath.ofproto
+        parser = self._datapath.ofproto_parser
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
 
         return (
-            self.datapath,
+            self._datapath,
             0,
             match,
             actions,
         )
 
-    def del_flow_rule_generator(self, datapath):
+    def del_flow_rule_generator(self):
         """
         datapath.send(:return:)
         :param datapath:
         :return:
         """
-        self.datapath = datapath
         for flow_rule in self.flow_rules:
             datapath = flow_rule.datapath
             ofproto = datapath.ofproto
@@ -82,9 +85,6 @@ class FlowRuleManager(object):
         self.add_flow(**:return:)
         :return:
         """
-        if self.datapath is None:
-            raise ValueError("Controller is not MITIGATE MODE!")
-
         #First, add ANY Match Flow Entry
         #yield self.create_any_match_flow_rule()
 
@@ -104,9 +104,6 @@ class FlowRuleManager(object):
                 actions,
                 buffer_id
             )
-
-        self.datapath = None #Reset
-
 
 #packet_in_handlerにて、受け取ったパケットのipv4がsubnetに属するか調べるのに必要
 def is_ipv4_belongs_to_network(ipv4, network):

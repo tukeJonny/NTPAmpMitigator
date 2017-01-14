@@ -87,8 +87,20 @@ class MitigateSwitch13(app_manager.RyuApp):
             datapath,
             0,
             match,
+            None,
             actions,
         )
+
+    def del_all_flow_rule(self, datapath):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        mod = parser.OFPFlowMod(datapath,0,0,0,
+                                ofproto.OFPFC_DELETE,
+                                0,0,1,
+                                ofproto.OFPCML_NO_BUFFER,
+                                ofproto.OFPP_ANY,
+                                ofproto.OFPG_ANY)
+        datapath.send_msg(mod)
 
     def add_allow_arp_flow_rule(self, datapath, in_port, eth_dest, actions):
         parser = datapath.ofproto_parser
@@ -116,24 +128,33 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         self.del_flow(datapath, match)
 
-    def refresh(self):
+    def refresh(self, delete_all=False, add_mitigate_rule=False):
         self.logger.info("[*] Refreshing flow entry...")
 
-        self.logger.info("[-] Delete all flow rules (except table-miss entry)")
-        for dp in self.get_datapathes():
-            del_flow_gen = self.flow_rule_manager.del_flow_rule_generator(dp)
+        if delete_all:
+            self.logger.info("[-] Delete all flow rules")
+            for dp in self.get_datapathes():
+                self.del_all_flow_rule(dp)
+        else:
+            self.logger.info("[-] Delete all flow rules (except table-miss entry)")
+            del_flow_gen = self.flow_rule_manager.del_flow_rule_generator()
             for datapath, msg in del_flow_gen:
                 datapath.send_msg(msg)
 
-        self.logger.info("[+] Add table-miss Packet-In entry")
-        for datapath in self.get_datapathes():
-            ofproto = datapath.ofproto
-            parser = datapath.ofproto_parser
-            actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
+        if add_mitigate_rule:
+            self.logger.info("[+] Add table-miss Drop entry")
+            for dp in self.get_datapathes():
+                self.add_table_miss_drop_flow_rule(dp)
+        else:
+            self.logger.info("[+] Add table-miss Packet-In entry")
+            for datapath in self.get_datapathes():
+                ofproto = datapath.ofproto
+                parser = datapath.ofproto_parser
+                actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
 
-            self.add_flow(*self.create_table_miss_flow_rule(datapath, actions))
+                self.add_flow(*self.create_table_miss_flow_rule(datapath, actions), not_manage=True)
 
-        self.logger.info("[+] Add all flow rules (include table-miss entry)")
+        self.logger.info("[+] Add all flow rules")
         add_flow_gen = self.flow_rule_manager.add_flow_rule_generator()
         for datapath,priority,match,actions,buffer_id in add_flow_gen:
             self.add_flow(datapath,priority,match,None,actions,buffer_id=buffer_id, not_manage=True)
@@ -142,11 +163,12 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.MITIGATE_MODE = True
         self.logger.info("[*] Mitigate Entry")
 
-        self.logger.info("[-] Delete table-miss Packet-In rule")
-        self.del_table_miss_flow_rule(datapath)
-
-        self.logger.info("[+] Add table_miss Drop rule")
-        self.add_table_miss_drop_flow_rule(datapath)
+        # self.logger.info("[-] Delete table-miss Packet-In rule")
+        # self.del_table_miss_flow_rule(datapath)
+        #
+        # self.logger.info("[+] Add table_miss Drop rule")
+        # self.add_table_miss_drop_flow_rule(datapath)
+        self.refresh(delete_all=True, add_mitigate_rule=True)
 
         # Spawn mitigate_exit
         self.logger.info("[+] Spawn mitigate_exit process")
@@ -209,7 +231,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         datapath.send_msg(mod)
 
 
-    def del_flow(self, datapath, match, cookie=0):
+    def del_flow(self, datapath, match, cookie=0, priority=0):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -218,6 +240,7 @@ class MitigateSwitch13(app_manager.RyuApp):
             match=match,
             cookie=cookie,
             command=ofproto.OFPFC_DELETE,
+            priority=priority,
             #buffer_id=ofproto.OFPCML_NO_BUFFER
         )
         datapath.send_msg(msg)
