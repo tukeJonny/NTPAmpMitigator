@@ -317,8 +317,9 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         actions = [parser.OFPActionOutput(out_port)]
 
-        # ARP
-        self.add_allow_arp_flow_rule(datapath, in_port, dst, actions)
+        # ARP (ARP Floodをフローエントリに追加したらダメ)
+        if out_port != ofproto.OFPP_FLOOD:
+            self.add_allow_arp_flow_rule(datapath, in_port, dst, actions)
 
         # Filtering 2
         #NAT側から通ってきたパケットはフィルタリングしない
