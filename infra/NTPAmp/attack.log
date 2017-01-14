@@ -1,0 +1,15 @@
+2017-01-14 17:27:26,525 - __main__ - INFO - [+] NTP Amp Attack start!
+2017-01-14 17:27:26,525 - __main__ - INFO - [*] Spawning 1 daemonized threads...
+2017-01-14 17:27:26,525 - __main__ - INFO - [*] Spawn <Thread(Thread-2, initial daemon)>
+2017-01-14 17:27:26,526 - __main__ - INFO - [*] Get entry from ntpserver 192.168.179.4:123
+2017-01-14 17:27:26,526 - __main__ - INFO - [+] Finish spawning.
+2017-01-14 17:28:01,640 - __main__ - INFO - [+] NTP Amp Attack start!
+2017-01-14 17:28:01,640 - __main__ - INFO - [*] Spawning 1 daemonized threads...
+2017-01-14 17:28:01,640 - __main__ - INFO - [*] Spawn <Thread(Thread-2, initial daemon)>
+2017-01-14 17:28:01,640 - __main__ - INFO - [*] Get entry from ntpserver 192.168.179.4:123
+2017-01-14 17:28:01,640 - __main__ - INFO - [+] Finish spawning.
+2017-01-14 17:31:56,891 - __main__ - INFO - [+] NTP Amp Attack start!
+2017-01-14 17:31:56,891 - __main__ - INFO - [*] Spawning 1 daemonized threads...
+2017-01-14 17:31:56,891 - __main__ - INFO - [*] Spawn <Thread(Thread-2, initial daemon)>
+2017-01-14 17:31:56,891 - __main__ - INFO - [*] Get entry from ntpserver 192.168.179.4:123
+2017-01-14 17:31:56,892 - __main__ - INFO - [+] Finish spawning.
