@@ -163,6 +163,7 @@ class MitigateSwitch13(app_manager.RyuApp):
             #self.logger.info("[+] Add table-miss Drop entry")
             for dp in self.get_datapathes():
                 self.add_table_miss_drop_flow_rule(dp)
+                self.add_table_miss_check_packetin_flow_rule(dp)
         else: #Mitigate Exit
             #self.logger.info("[+] Add table-miss Packet-In entry")
             for datapath in self.get_datapathes():
@@ -188,7 +189,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.refresh(add_mitigate_rule=True)
 
         # Add priority=1 table-miss subnet check Packet-In
-        self.add_table_miss_check_packetin_flow_rule(datapath)
+        #self.add_table_miss_check_packetin_flow_rule(datapath)
 
         # Spawn mitigate_exit
         # 03:54:40

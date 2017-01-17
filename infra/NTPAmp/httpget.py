@@ -22,7 +22,7 @@ class StaticGraph(object):
         }
         self.timeout = {
             'x': [x for x in range(1, len(elapsed_times)+1)],
-            'y': [timeout for _ in range(len(elapsed_times))]
+            'y': [timeout]*len(elapsed_times)
         }
 
     def make(self):
@@ -31,6 +31,8 @@ class StaticGraph(object):
         plt.ylabel("elapsed time [sec]")
         plt.xlim([1,len(self.elapsed['x'])])
         plt.ylim([0,self.timeout['y'][0]+1])
+        plt.legend(loc='upper right')
+        plt.grid()
         plt.plot(self.timeout['x'],self.timeout['y'], color='r')
         plt.plot(self.elapsed['x'],self.elapsed['y'])
         plt.savefig("elapsed.png")
