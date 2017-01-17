@@ -30,6 +30,7 @@ from ryu.lib.packet import ether_types
 
 from utils import is_ipv4_belongs_to_network
 from utils import FlowRule, FlowRuleManager
+from flow_msg_utils import FlowModHelper
 
 class MitigateSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -50,6 +51,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         }
         self.mac_to_port = {}
         self.flow_rule_manager = FlowRuleManager() # 全てにマッチするルール以外を管理
+        self.flow_mod_helper = FlowModHelper()
 
         self.NAT_IN_PORT = 5 # h1 h2 h3 h4 nat
                                 #           |_this
@@ -186,7 +188,9 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.logger.info("[*] Mitigate Entry")
 
         #self.logger.info("[!] Refresh flow rules")
-        self.refresh(add_mitigate_rule=True)
+        #テスト中
+        #self.refresh(add_mitigate_rule=True)
+        self.flow_mod_helper.change_flow_mitigate_entry(datapath)
 
         # Add priority=1 table-miss subnet check Packet-In
         #self.add_table_miss_check_packetin_flow_rule(datapath)
@@ -200,7 +204,10 @@ class MitigateSwitch13(app_manager.RyuApp):
         #hard_timeoutとギリギリのタイミングになるので、+5ぐらいしておく
         time.sleep(self.SLEEP_TIME+5)
 
-        self.refresh()
+        #テスト中
+        #self.refresh()
+        self.flow_mod_helper.change_flow_mitigate_exit(datapath)
+
         self.logger.info("[-] Mitigate Exit")
         self.MITIGATE_MODE = False
 
@@ -325,12 +332,12 @@ class MitigateSwitch13(app_manager.RyuApp):
             if msg.buffer_id != ofproto.OFP_NO_BUFFER:
                 #self.logger.info("[+] add_flow with buffer_id")
                 #IP Check
-                self.add_flow(datapath, 2, match, match_rule, actions, msg.buffer_id)
+                self.add_flow(datapath, 100, match, match_rule, actions, msg.buffer_id)
                 return
             else:
                 #self.logger.info("[+] add_flow")
                 #IP Check
-                self.add_flow(datapath, 2, match, match_rule, actions)
+                self.add_flow(datapath, 100, match, match_rule, actions)
         else:
             self.logger.info("[*] This packet's out_port is FLOODING")
 
