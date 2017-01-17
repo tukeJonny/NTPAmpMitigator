@@ -106,7 +106,6 @@ class MitigateSwitch13(app_manager.RyuApp):
         datapath.send_msg(mod)
 
     ##### ARP Rule #####
-
     def add_allow_arp_flow_rule(self, datapath, in_port, eth_dest, actions):
         parser = datapath.ofproto_parser
         match_config = {
@@ -133,7 +132,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         parser = datapath.ofproto_parser
         match = parser.OFPMatch(**self.detect_match_rule)
 
-        # Packet-In
+        # Packet-In(priority=1)
         _,priority,_,_,actions = self.create_table_miss_flow_rule(datapath)
         priority = 1
         self.add_flow(datapath, priority, match, None, actions, not_manage=True)
@@ -153,17 +152,18 @@ class MitigateSwitch13(app_manager.RyuApp):
     def refresh(self, add_mitigate_rule=False):
         self.logger.info("[*] Refreshing flow entry...")
 
+        #突貫開発のため、モード切り替え時に全てのルールを消す（ルールごと消すとミスが起きる可能性があったので）ようにしている
         #time.sleep(20)
         #self.logger.info("[-] Delete all flow rules (except table-miss entry)")
         for dp in self.get_datapathes():
             self.del_all_flow_rule(dp)
 
         #time.sleep(20)
-        if add_mitigate_rule:
+        if add_mitigate_rule: # Mitigate Entry
             #self.logger.info("[+] Add table-miss Drop entry")
             for dp in self.get_datapathes():
                 self.add_table_miss_drop_flow_rule(dp)
-        else:
+        else: #Mitigate Exit
             #self.logger.info("[+] Add table-miss Packet-In entry")
             for datapath in self.get_datapathes():
                 ofproto = datapath.ofproto
