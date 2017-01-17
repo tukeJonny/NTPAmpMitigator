@@ -36,7 +36,7 @@
 
 
 mn --nat \
-   --topo linear,1,4 \
+   --topo linear,1,3 \
    --mac \
    --switch ovsk \
    --controller remote \

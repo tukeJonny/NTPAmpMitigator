@@ -42,19 +42,20 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.dpset = kwargs['dpset']
 
         self.subnet = ("10.0.0.0","255.0.0.0")
-        self.detect_match_rule = {
-            'eth_type': ether.ETH_TYPE_IP,
-            'ipv4_src': self.subnet,
-            #'in_port': None,
-            #'eth_dst': None,
-        }
+        # self.detect_match_rule = {
+        #     'eth_type': ether.ETH_TYPE_IP,
+        #     'ipv4_src': self.subnet,
+        #     #'in_port': None,
+        #     #'eth_dst': None,
+        # }
         self.mac_to_port = {}
 
         self.flow_mod_helper = FlowModHelper()
 
-        self.NAT_IN_PORT = 5 # h1 h2 h3 h4 nat
+        self.NAT_IN_PORT = 4 # h1 h2 h3 h4 nat
                                 #           |_this
-        self.SLEEP_TIME = 5
+        self.SLEEP_TIME = 60
+        #self.ADDITIONAL_SLEEP_TIME = 5 #生成したスレッドが、hard_timeoutとタイミングを合わせられるように調節
         self.MITIGATE_MODE = False
 
     ##### Switch feature handler #####
@@ -79,7 +80,7 @@ class MitigateSwitch13(app_manager.RyuApp):
     ##### Mitigate Entry & Exit #####
     def mitigate_entry(self, datapath):
         self.MITIGATE_MODE = True
-        self.logger.info("[*] Mitigate Entry")
+        self.logger.info("[*] Mitigate Entry (MITIGATE_MODE={})".format(self.MITIGATE_MODE))
 
         self.flow_mod_helper.change_flow_mitigate_entry(datapath)
 
@@ -89,11 +90,12 @@ class MitigateSwitch13(app_manager.RyuApp):
 
     def mitigate_exit(self, datapath):
         #hard_timeoutとギリギリのタイミングになるので、+5ぐらいしておく
-        time.sleep(self.SLEEP_TIME+5)
+        #hard_timeoutどこにも指定していなかったので、修正。動くか確認
+        time.sleep(self.SLEEP_TIME)#+self.ADDITIONAL_SLEEP_TIME)
 
         self.flow_mod_helper.change_flow_mitigate_exit(datapath)
 
-        self.logger.info("[-] Mitigate Exit")
+        self.logger.info("[-] Mitigate Exit (MITIGATE_MODE = {})".format(self.MITIGATE_MODE))
         self.MITIGATE_MODE = False
 
     ##### Packet-In Handler #####
