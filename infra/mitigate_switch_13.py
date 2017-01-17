@@ -118,7 +118,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         match = parser.OFPMatch(**match_config)
 
         #self.logger.info("[+] add arp flow rule")
-        self.add_flow(datapath, 2, match, match_config, actions)
+        self.add_flow(datapath, 100, match, match_config, actions)
 
     ##### Add & Delete table-miss entry #####
 

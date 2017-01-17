@@ -153,7 +153,7 @@ class FlowModHelper(object):
                                        ofproto.OFPCML_NO_BUFFER)]
         self.del_flow(datapath, match, actions)
 
-    # Normal Packet-In (priority=2)
+    # Normal Packet-In (priority=100)
     ## ARP
     def add_normal_arp(self, datapath, in_port, eth_dest, actions):
         parser = datapath.ofproto_parser
