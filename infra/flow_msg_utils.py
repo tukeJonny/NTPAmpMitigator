@@ -107,6 +107,8 @@ class FlowModHelper(object):
         #print("[DEBUG] Delete Table-miss Packet-In")
         #self.del_table_miss_packet_in(datapath)
 
+        self.del_all_flow(datapath, self.MISS_TABLE)
+
         #
         #time.sleep(15)
         print("[DEBUG] Add Table-miss Drop")
@@ -123,17 +125,19 @@ class FlowModHelper(object):
         :param datapath:
         :return:
         """
-        #time.sleep(15)
-        print("[DEBUG] Delete Table-miss Drop")
-        self.del_table_miss_drop(datapath)
+        self.del_all_flow(datapath, table_id=self.MISS_TABLE)
 
         #time.sleep(15)
-        print("[DEBUG] Delete ipv4_src check Packet-In")
-        self.del_check_packet_in(datapath)
+        # print("[DEBUG] Delete Table-miss Drop")
+        # self.del_table_miss_drop(datapath)
+        #
+        # #time.sleep(15)
+        # print("[DEBUG] Delete ipv4_src check Packet-In")
+        # self.del_check_packet_in(datapath)
 
-        #time.sleep(15)
-        #print("[DEBUG] Add Table-miss Packet-In")
-        #self.add_table_miss_packet_in(datapath)
+        time.sleep(15)
+        print("[DEBUG] Add Table-miss Packet-In")
+        self.add_table_miss_packet_in(datapath)
 
     ## Packet-In
     def add_table_miss_packet_in(self, datapath):
@@ -143,7 +147,7 @@ class FlowModHelper(object):
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0, match, actions, table_id=1)
+        self.add_flow(datapath, 0, match, actions, table_id=self.MISS_TABLE)
 
     # def del_table_miss_packet_in(self, datapath):
     #     ofproto = datapath.ofproto
@@ -160,7 +164,7 @@ class FlowModHelper(object):
 
         match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP)
         actions = []
-        self.add_flow(datapath, 10, match, actions, table_id=1)
+        self.add_flow(datapath, 10, match, actions, table_id=self.MISS_TABLE)
 
     # def del_table_miss_drop(self, datapath):
     #     parser = datapath.ofproto_parser
@@ -177,7 +181,7 @@ class FlowModHelper(object):
         match = parser.OFPMatch(**self.detect_match_rule)
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                    ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 50, match, actions)
+        self.add_flow(datapath, 50, match, actions, table_id=self.MISS_TABLE)
 
     # def del_check_packet_in(self, datapath):
     #     parser = datapath.ofproto_parser
