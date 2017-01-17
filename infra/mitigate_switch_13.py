@@ -55,7 +55,7 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         self.NAT_IN_PORT = 5 # h1 h2 h3 h4 nat
                                 #           |_this
-        self.SLEEP_TIME = 60
+        self.SLEEP_TIME = 5
         self.MITIGATE_MODE = False
 
     ##### Switch feature & Flow stats reply Handler #####
@@ -73,10 +73,14 @@ class MitigateSwitch13(app_manager.RyuApp):
         # 128, OVS will send Packet-In with invalid buffer_id and
         # truncated packet data. In that case, we cannot output packets
         # correctly.  The bug has been fixed in OVS v2.1.0.
-        match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0, match, None, actions, not_manage=True)
+
+        # match = parser.OFPMatch()
+        # actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+        #                                   ofproto.OFPCML_NO_BUFFER)]
+        # self.add_flow(datapath, 0, match, None, actions, not_manage=True)
+
+        #テスト中
+        self.flow_mod_helper.init_flow_table(datapath)
 
     ##### Utils #####
 

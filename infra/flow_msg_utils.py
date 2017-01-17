@@ -5,6 +5,7 @@ import struct
 import ipaddress
 
 from ryu.ofproto import ether
+from ryu.ofproto.ofproto_v1_3_parser import OFPInstruction
 
 class FlowModHelper(object):
 
@@ -14,20 +15,37 @@ class FlowModHelper(object):
             'eth_type': ether.ETH_TYPE_IP,
             'ipv4_src': self.subnet,
         }
+        self.NORMAL_TABLE = 0
+        self.MISS_TABLE = 1
 
     # Common
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None, hard_timeout=0):
+    def add_flow(self, datapath, priority, match, actions, buffer_id=None, hard_timeout=0, table_id=0, inst=None):
+        """
+
+        :param datapath:
+        :param priority:
+        :param match:
+        :param actions:
+        :param buffer_id:
+        :param hard_timeout:
+        :param table_id: self.NORMAL_TABLE
+        :param inst: actions argument is instructions? (True of False)
+        :return:
+        """
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        if inst:
+            inst = actions
+        else:
+            inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
 
         if buffer_id is not None and buffer_id != ofproto.OFP_NO_BUFFER:
             msg = parser.OFPFlowMod(datapath=datapath,priority=priority,
-                                match=match, instructions=inst, hard_timeout=hard_timeout, buffer_id=buffer_id)
+                                match=match, instructions=inst, hard_timeout=hard_timeout, buffer_id=buffer_id, table_id=table_id)
         else:
             msg = parser.OFPFlowMod(datapath=datapath,priority=priority,
-                                    match=match, hard_timeout=hard_timeout, instructions=inst)
+                                    match=match, hard_timeout=hard_timeout, instructions=inst, table_id=table_id)
 
         datapath.send_msg(msg)
 
@@ -42,23 +60,39 @@ class FlowModHelper(object):
             match=match,
             instructions=inst,
             cookie=cookie,
-            command=ofproto.OFPFC_DELETE_STRICT, #試しにwildcardを無効にしてみる
+            command=ofproto.OFPFC_DELETE, #試しにwildcardを無効にしてみる
             buffer_id=ofproto.OFPCML_NO_BUFFER,
             out_port=ofproto.OFPP_ANY,
             out_group=ofproto.OFPG_ANY,
         )
         datapath.send_msg(msg)
 
-    def del_all_flow(self, datapath):
+    def del_all_flow(self, datapath, table_id):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-        mod = parser.OFPFlowMod(datapath,0,0,0,
+        mod = parser.OFPFlowMod(datapath,0,0,table_id,
                                 ofproto.OFPFC_DELETE,
                                 0,0,1,
                                 ofproto.OFPCML_NO_BUFFER,
                                 ofproto.OFPP_ANY,
                                 ofproto.OFPG_ANY)
         datapath.send_msg(mod)
+
+    # Initialize
+    def init_flow_table(self, datapath):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        # Table-miss GotoTable
+        match = parser.OFPMatch()
+        inst = [parser.OFPInstructionGotoTable(1)]
+        self.add_flow(datapath, 0, match, inst, inst=True)
+
+        # Table-miss Packet-In (table_id=1)
+        # actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+        #                                   ofproto.OFPCML_NO_BUFFER)]
+        # self.add_flow(datapath, 0, match, actions, table_id=self.MISS_TABLE)
+        self.add_table_miss_packet_in(datapath)
 
     # Mitigate Entry & Mitigate Exit
     ## Aggregate Mitigate Entry & Mitigate Exit
@@ -109,30 +143,31 @@ class FlowModHelper(object):
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0, match, actions)
+        self.add_flow(datapath, 0, match, actions, table_id=1)
 
-    def del_table_miss_packet_in(self, datapath):
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
+    # def del_table_miss_packet_in(self, datapath):
+    #     ofproto = datapath.ofproto
+    #     parser = datapath.ofproto_parser
+    #
+    #     match=parser.OFPMatch()
+    #     actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+    #                                     ofproto.OFPCML_NO_BUFFER)]
+    #     self.del_flow(datapath, match, actions, table_id=1)
 
-        match=parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                        ofproto.OFPCML_NO_BUFFER)]
-        self.del_flow(datapath, match, actions)
     ## Drop
     def add_table_miss_drop(self, datapath):
         parser = datapath.ofproto_parser
 
-        match = parser.OFPMatch()
+        match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP)
         actions = []
-        self.add_flow(datapath, 10, match, actions)
+        self.add_flow(datapath, 10, match, actions, table_id=1)
 
-    def del_table_miss_drop(self, datapath):
-        parser = datapath.ofproto_parser
-
-        match = parser.OFPMatch()
-        actions = []
-        self.del_flow(datapath, match, actions)
+    # def del_table_miss_drop(self, datapath):
+    #     parser = datapath.ofproto_parser
+    #
+    #     match = parser.OFPMatch(eth_type=ether.ETH_TYPE_IP)
+    #     actions = []
+    #     self.del_flow(datapath, match, actions)
 
     ## Packet-In with ipv4_src check
     def add_check_packet_in(self, datapath):
@@ -144,14 +179,14 @@ class FlowModHelper(object):
                    ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 50, match, actions)
 
-    def del_check_packet_in(self, datapath):
-        parser = datapath.ofproto_parser
-        ofproto = datapath.ofproto
-
-        match = parser.OFPMatch(**self.detect_match_rule)
-        actions = [parser.OFPActionoutput(ofproto.OFPP_CONTROLLER,
-                                       ofproto.OFPCML_NO_BUFFER)]
-        self.del_flow(datapath, match, actions)
+    # def del_check_packet_in(self, datapath):
+    #     parser = datapath.ofproto_parser
+    #     ofproto = datapath.ofproto
+    #
+    #     match = parser.OFPMatch(**self.detect_match_rule)
+    #     actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+    #                                    ofproto.OFPCML_NO_BUFFER)]
+    #     self.del_flow(datapath, match, actions)
 
     # Normal Packet-In (priority=100)
     ## ARP
