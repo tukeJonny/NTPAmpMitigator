@@ -31,6 +31,7 @@ class StaticGraph(object):
         plt.ylabel("elapsed time [sec]")
         plt.xlim([1,len(self.elapsed['x'])])
         plt.ylim([0,self.timeout['y'][0]+1])
+        plt.yticks(0.1)
         plt.legend(loc='upper right')
         plt.grid()
         plt.plot(self.timeout['x'],self.timeout['y'], color='r')
