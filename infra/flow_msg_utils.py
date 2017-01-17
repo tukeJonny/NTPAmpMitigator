@@ -135,7 +135,7 @@ class FlowModHelper(object):
         # print("[DEBUG] Delete ipv4_src check Packet-In")
         # self.del_check_packet_in(datapath)
 
-        time.sleep(15)
+        #time.sleep(15)
         print("[DEBUG] Add Table-miss Packet-In")
         self.add_table_miss_packet_in(datapath)
 

@@ -265,7 +265,6 @@ class MitigateSwitch13(app_manager.RyuApp):
         #IPv4アドレスが偽装されていると検知した場合、MITIGATE ENTRYする
         if pkt_ipv4 is not None and in_port != self.NAT_IN_PORT:
             ipv4_src = pkt_ipv4.src.decode("utf-8")
-            #self.logger.info("[*] Checking ipv4 belongs to network...")
             if not is_ipv4_belongs_to_network(ipv4_src, self.subnet):
                 self.logger.info("[!!] filter packet from {}".format(ipv4_src))
                 if not self.MITIGATE_MODE:
@@ -295,7 +294,9 @@ class MitigateSwitch13(app_manager.RyuApp):
             #     #self.logger.info("[+] add_flow")
             #     #IP Check
             #     self.add_flow(datapath, 100, match, match_rule, actions)
-            self.flow_mod_helper(datapath, in_port, out_port, dst, buffer_id=msg.buffer_id)
+            is_nat = in_port == self.NAT_IN_PORT
+            self.flow_mod_helper.add_normal_packet_in(datapath, in_port, out_port,
+                                                      dst, buffer_id=msg.buffer_id, nat=is_nat)
         else:
             self.logger.info("[*] This packet's out_port is FLOODING")
 
