@@ -63,8 +63,6 @@ class MitigateSwitch13(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
 
         # install table-miss flow entry
         #
@@ -73,13 +71,6 @@ class MitigateSwitch13(app_manager.RyuApp):
         # 128, OVS will send Packet-In with invalid buffer_id and
         # truncated packet data. In that case, we cannot output packets
         # correctly.  The bug has been fixed in OVS v2.1.0.
-
-        # match = parser.OFPMatch()
-        # actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-        #                                   ofproto.OFPCML_NO_BUFFER)]
-        # self.add_flow(datapath, 0, match, None, actions, not_manage=True)
-
-        #テスト中
         self.flow_mod_helper.init_flow_table(datapath)
 
     ##### Utils #####
@@ -153,38 +144,6 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         self.del_flow(datapath, match)
 
-    ##### Refresh #####
-
-    def refresh(self, add_mitigate_rule=False):
-        self.logger.info("[*] Refreshing flow entry...")
-
-        #突貫開発のため、モード切り替え時に全てのルールを消す（ルールごと消すとミスが起きる可能性があったので）ようにしている
-        #time.sleep(20)
-        #self.logger.info("[-] Delete all flow rules (except table-miss entry)")
-        for dp in self.get_datapathes():
-            self.del_all_flow_rule(dp)
-
-        #time.sleep(20)
-        if add_mitigate_rule: # Mitigate Entry
-            #self.logger.info("[+] Add table-miss Drop entry")
-            for dp in self.get_datapathes():
-                self.add_table_miss_drop_flow_rule(dp)
-                self.add_table_miss_check_packetin_flow_rule(dp)
-        else: #Mitigate Exit
-            #self.logger.info("[+] Add table-miss Packet-In entry")
-            for datapath in self.get_datapathes():
-                ofproto = datapath.ofproto
-                parser = datapath.ofproto_parser
-                actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
-
-                self.add_flow(*self.create_table_miss_flow_rule(datapath, actions), not_manage=True)
-
-        #time.sleep(20)
-        #self.logger.info("[+] Add all flow rules")
-        add_flow_gen = self.flow_rule_manager.add_flow_rule_generator()
-        for datapath,priority,match,actions,buffer_id in add_flow_gen:
-            self.add_flow(datapath,priority,match,None,actions,buffer_id=buffer_id, not_manage=True)
-
     ##### Mitigate Entry & Exit #####
 
     def mitigate_entry(self, datapath):
@@ -192,15 +151,9 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.logger.info("[*] Mitigate Entry")
 
         #self.logger.info("[!] Refresh flow rules")
-        #テスト中
-        #self.refresh(add_mitigate_rule=True)
         self.flow_mod_helper.change_flow_mitigate_entry(datapath)
 
-        # Add priority=1 table-miss subnet check Packet-In
-        #self.add_table_miss_check_packetin_flow_rule(datapath)
-
         # Spawn mitigate_exit
-        # 03:54:40
         self.logger.info("[+] Spawn mitigate_exit process")
         hub.spawn(self.mitigate_exit, datapath)
 
@@ -208,8 +161,6 @@ class MitigateSwitch13(app_manager.RyuApp):
         #hard_timeoutとギリギリのタイミングになるので、+5ぐらいしておく
         time.sleep(self.SLEEP_TIME+5)
 
-        #テスト中
-        #self.refresh()
         self.flow_mod_helper.change_flow_mitigate_exit(datapath)
 
         self.logger.info("[-] Mitigate Exit")
@@ -290,7 +241,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
+        #self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
@@ -305,7 +256,9 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         # ARP (ARP Floodをフローエントリに追加したらダメ)
         if out_port != ofproto.OFPP_FLOOD:
-            self.add_allow_arp_flow_rule(datapath, in_port, dst, actions)
+            #self.add_allow_arp_flow_rule(datapath, in_port, dst, actions)
+            #テスト中
+            self.flow_mod_helper.add_normal_arp(datapath, in_port, dst, actions)
 
         # Filtering 2
         #NAT側から通ってきたパケットはフィルタリングしない
@@ -314,7 +267,7 @@ class MitigateSwitch13(app_manager.RyuApp):
             ipv4_src = pkt_ipv4.src.decode("utf-8")
             #self.logger.info("[*] Checking ipv4 belongs to network...")
             if not is_ipv4_belongs_to_network(ipv4_src, self.subnet):
-                #self.logger.info("[!!] filter packet from {}".format(ipv4_src))
+                self.logger.info("[!!] filter packet from {}".format(ipv4_src))
                 if not self.MITIGATE_MODE:
                     # FlowMod Remove table-miss Packet-In Entry
                     self.logger.info("[*] MITIGATE MODE ON")
@@ -323,25 +276,26 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         # install a flow to avoid packet_in next time
         if out_port != ofproto.OFPP_FLOOD:
-            if in_port != self.NAT_IN_PORT:
-                match_rule = self.detect_match_rule.copy()
-            else:
-                match_rule = {}
-            match_rule.update({'in_port': in_port, 'eth_dst':dst})
-
-            # Managerに追加
-            match = parser.OFPMatch(**match_rule)
+            # if in_port != self.NAT_IN_PORT:
+            #     match_rule = self.detect_match_rule.copy()
+            # else:
+            #     match_rule = {}
+            # match_rule.update({'in_port': in_port, 'eth_dst':dst})
+            #
+            # # Managerに追加
+            # match = parser.OFPMatch(**match_rule)
             # verify if we have a valid buffer_id, if yes avoid to send both
             # flow_mod & packet_out
-            if msg.buffer_id != ofproto.OFP_NO_BUFFER:
-                #self.logger.info("[+] add_flow with buffer_id")
-                #IP Check
-                self.add_flow(datapath, 100, match, match_rule, actions, msg.buffer_id)
-                return
-            else:
-                #self.logger.info("[+] add_flow")
-                #IP Check
-                self.add_flow(datapath, 100, match, match_rule, actions)
+            # if msg.buffer_id != ofproto.OFP_NO_BUFFER:
+            #     #self.logger.info("[+] add_flow with buffer_id")
+            #     #IP Check
+            #     self.add_flow(datapath, 100, match, match_rule, actions, msg.buffer_id)
+            #     return
+            # else:
+            #     #self.logger.info("[+] add_flow")
+            #     #IP Check
+            #     self.add_flow(datapath, 100, match, match_rule, actions)
+            self.flow_mod_helper(datapath, in_port, out_port, dst, buffer_id=msg.buffer_id)
         else:
             self.logger.info("[*] This packet's out_port is FLOODING")
 
@@ -352,6 +306,8 @@ class MitigateSwitch13(app_manager.RyuApp):
             self.logger.info("    Ignore this packet.")
             return
 
-        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
-                                  in_port=in_port, actions=actions, data=data)
-        datapath.send_msg(out)
+        # out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
+        #                           in_port=in_port, actions=actions, data=data)
+        # datapath.send_msg(out)
+        self.flow_mod_helper.normal_packet_out(datapath, msg.buffer_id, in_port,
+                                               actions, data)
