@@ -1,4 +1,0 @@
----
-- include: common.yml
-- include: apache2.yml
-- include: zabbix-agent.yml

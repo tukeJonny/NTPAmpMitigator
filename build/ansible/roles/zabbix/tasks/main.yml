@@ -1,0 +1,46 @@
+---
+- name: put rpm
+  copy:
+    src=files/zabbix-release-3.0-1.el7.noarch.rpm
+    dest=/tmp/zabbix-release-3.0-1.el7.noarch.rpm
+  tags:
+    - zabbix
+
+- name: register repo
+  yum: name=/tmp/zabbix-release-3.0-1.el7.noarch.rpm
+  tags:
+    - zabbix
+
+- name: Install
+  yum: name={{ item }} enablerepo=remi
+  with_items:
+    - zabbix-server-mysql
+    - zabbix-web-mysql
+    - zabbix-web-japanese
+    - zabbix-agent
+    - zabbix-get
+
+- name: Disable zabbix yum repos
+  copy:
+    src=files/zabbix.repo
+    dest=/etc/yum.repos.d/zabbix.repo
+
+- include: python.yml
+
+- name: create mysql database
+  mysql_db: name={{ mysql_user }} encoding=utf8
+
+- name: create mysql user
+  mysql_user: name={{ mysql_user }} host='127.0.0.1' \
+    password={{ mysql_pass }} priv={{ mysql_db }}.*:ALL,GRANT state=present
+
+- name: Import Schema and Data for Zabbix
+  shell: |
+    zcat create.sql.gz | mysql -uroot -pzabbix
+  args:
+    chdir: /usr/share/doc/zabbix-server-mysql-3.0.0/
+
+
+
+
+

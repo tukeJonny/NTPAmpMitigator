@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 #from ryu.app import simple_switch_13
-import mitigate_switch_13#my custom simple_switch_13
+#import mitigate_switch_13#my custom simple_switch_13
 from ryu.controller import ofp_event
 from ryu.controller.handler import (
     MAIN_DISPATCHER,
@@ -9,7 +9,15 @@ from ryu.controller.handler import (
 )
 from ryu.controller.handler import set_ev_cls
 
-class NTPAmpMitigator(mitigate_switch_13.MitigateSwitch13):
+MITIGATE_MODE_ON = True
+if MITIGATE_MODE_ON:
+    import mitigate_switch_13
+    super_class = mitigate_switch_13.MitigateSwitch13
+else:
+    from ryu.app import simple_switch_13
+    super_class = simple_switch_13.SimpleSwitch13
+
+class NTPAmpMitigator(super_class):
 
     def __init__(self, *args, **kwargs):
         super(NTPAmpMitigator, self).__init__(*args, **kwargs)

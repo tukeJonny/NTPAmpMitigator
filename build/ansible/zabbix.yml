@@ -1,0 +1,6 @@
+---
+- name: zabbix
+  hosts: zabbix
+  become: yes
+  roles:
+    - zabbix

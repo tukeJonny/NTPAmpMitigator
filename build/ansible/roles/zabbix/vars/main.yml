@@ -1,0 +1,4 @@
+---
+mysql_db: zabbix
+mysql_user: zabbix
+mysql_pass: zabbix

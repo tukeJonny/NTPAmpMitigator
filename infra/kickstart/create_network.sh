@@ -40,4 +40,5 @@ mn --nat \
    --mac \
    --switch ovsk \
    --controller remote \
-   -x
+   -x \
+   --link=tc,bw=1000

@@ -1,0 +1,5 @@
+---
+- include: common.yml
+#- include: apache2.yml
+#- include: zabbix-agent.yml
+- include: zabbix.yml

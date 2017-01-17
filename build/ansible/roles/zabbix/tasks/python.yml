@@ -1,0 +1,18 @@
+---
+- name: Install yum package
+  yum: name={{ item }}
+  with_items:
+    - epel-release
+
+- name: Install pip
+  shell: |
+    curl https://bootstrap.pypa.io/get-pip.py | python
+
+- name: Install mysql-client yum package
+  shell: |
+    yum -y install python-devel mysql-devel
+
+- name: Install mysql-client python lib
+  shell: |
+    pip install mysqlclient
+    python -c "import MySQLdb"

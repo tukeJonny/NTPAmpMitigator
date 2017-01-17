@@ -7,6 +7,8 @@ import logging
 import random
 import threading
 import datetime
+if 'datetime' in datetime.__dict__:
+    from datetime import datetime
 
 from scapy.all import*
 
@@ -30,7 +32,6 @@ class NTPAmp(object):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        ch = None
         if warmup:
             ch = logging.FileHandler(filename='warmup.log', mode='w')
         else:
