@@ -41,4 +41,4 @@ mn --nat \
    --switch ovsk \
    --controller remote \
    -x \
-   --link=tc,bw=1000 #Please save your pc.
+   #--link=tc,bw=1000 #Please save your pc.

@@ -171,6 +171,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         else:
             self.logger.info("[!] There is no buffer, But data isn't specified!")
             self.logger.info("    Ignore this packet.")
+            self.logger.info("    pkt={}".format(pkt))
             return
 
         self.flow_mod_helper.normal_packet_out(datapath, msg.buffer_id, in_port,
