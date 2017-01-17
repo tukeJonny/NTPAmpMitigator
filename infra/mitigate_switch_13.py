@@ -347,6 +347,10 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         if msg.buffer_id == ofproto.OFP_NO_BUFFER:
             data = msg.data
+        else:
+            self.logger.info("[!] There is no buffer, But data isn't specified!")
+            self.logger.info("    Ignore this packet.")
+            return
 
         out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
                                   in_port=in_port, actions=actions, data=data)

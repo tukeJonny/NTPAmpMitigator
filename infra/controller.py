@@ -9,7 +9,7 @@ from ryu.controller.handler import (
 )
 from ryu.controller.handler import set_ev_cls
 
-MITIGATE_MODE_ON = True
+MITIGATE_MODE_ON = False
 if MITIGATE_MODE_ON:
     import mitigate_switch_13
     super_class = mitigate_switch_13.MitigateSwitch13
