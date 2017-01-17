@@ -28,8 +28,7 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ipv4 as ipv4
 from ryu.lib.packet import ether_types
 
-from utils import is_ipv4_belongs_to_network
-from utils import FlowRule, FlowRuleManager
+from flow_msg_utils import is_ipv4_belongs_to_network
 from flow_msg_utils import FlowModHelper
 
 class MitigateSwitch13(app_manager.RyuApp):
@@ -50,7 +49,7 @@ class MitigateSwitch13(app_manager.RyuApp):
             #'eth_dst': None,
         }
         self.mac_to_port = {}
-        self.flow_rule_manager = FlowRuleManager() # 全てにマッチするルール以外を管理
+
         self.flow_mod_helper = FlowModHelper()
 
         self.NAT_IN_PORT = 5 # h1 h2 h3 h4 nat
@@ -58,8 +57,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.SLEEP_TIME = 5
         self.MITIGATE_MODE = False
 
-    ##### Switch feature & Flow stats reply Handler #####
-
+    ##### Switch feature handler #####
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
@@ -74,83 +72,15 @@ class MitigateSwitch13(app_manager.RyuApp):
         self.flow_mod_helper.init_flow_table(datapath)
 
     ##### Utils #####
-
     def get_datapathes(self):
         datapathes = [dp for _, dp in self.dpset.get_all()]
         return datapathes
 
-    def create_table_miss_flow_rule(self, datapath, actions=None):
-        parser = datapath.ofproto_parser
-        ofproto = datapath.ofproto
-        match = parser.OFPMatch()
-        if actions is None:
-            actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-
-        return (datapath,0,match,None,actions,)
-
-    ##### Delete all #####
-
-    def del_all_flow_rule(self, datapath):
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-        mod = parser.OFPFlowMod(datapath,0,0,0,
-                                ofproto.OFPFC_DELETE,
-                                0,0,1,
-                                ofproto.OFPCML_NO_BUFFER,
-                                ofproto.OFPP_ANY,
-                                ofproto.OFPG_ANY)
-        datapath.send_msg(mod)
-
-    ##### ARP Rule #####
-    def add_allow_arp_flow_rule(self, datapath, in_port, eth_dest, actions):
-        parser = datapath.ofproto_parser
-        match_config = {
-            'eth_type':ether.ETH_TYPE_ARP,
-            'in_port':in_port,
-            'eth_dst':eth_dest
-        }
-        match = parser.OFPMatch(**match_config)
-
-        #self.logger.info("[+] add arp flow rule")
-        self.add_flow(datapath, 100, match, match_config, actions)
-
-    ##### Add & Delete table-miss entry #####
-
-    def add_table_miss_drop_flow_rule(self, datapath):
-        parser = datapath.ofproto_parser
-        match = parser.OFPMatch()
-        actions = [] #Drop
-
-        #self.logger.info("[+] add mitigate flow rule")
-        self.add_flow(datapath, 0, match, None, actions, not_manage=True, no_buffer=True, hard_timeout=self.SLEEP_TIME)
-
-    def add_table_miss_check_packetin_flow_rule(self, datapath):
-        parser = datapath.ofproto_parser
-        match = parser.OFPMatch(**self.detect_match_rule)
-
-        # Packet-In(priority=1)
-        _,priority,_,_,actions = self.create_table_miss_flow_rule(datapath)
-        priority = 1
-        self.add_flow(datapath, priority, match, None, actions, not_manage=True)
-
-        # ARP
-        match = parser.OFPMatch(eth_type=ether.ETH_TYPE_ARP)
-        self.add_flow(datapath, priority, match, None, actions, not_manage=True)
-
-    def del_table_miss_flow_rule(self, datapath):
-        parser = datapath.ofproto_parser
-        match = parser.OFPMatch()
-
-        self.del_flow(datapath, match)
-
     ##### Mitigate Entry & Exit #####
-
     def mitigate_entry(self, datapath):
         self.MITIGATE_MODE = True
         self.logger.info("[*] Mitigate Entry")
 
-        #self.logger.info("[!] Refresh flow rules")
         self.flow_mod_helper.change_flow_mitigate_entry(datapath)
 
         # Spawn mitigate_exit
@@ -165,49 +95,6 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         self.logger.info("[-] Mitigate Exit")
         self.MITIGATE_MODE = False
-
-    ##### Add & Delete flow entry #####
-
-    def add_flow(self, datapath, priority, match, match_config, actions, buffer_id=None, not_manage=False, no_buffer=True, hard_timeout=0):
-        if not not_manage:
-            # Register FlowRule to FlowRuleManager
-            flow_rule = FlowRule(datapath, priority, match_config, actions, buffer_id)
-            self.flow_rule_manager.register(flow_rule)
-
-        # Add Flow
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
-                                    actions)]
-        if not no_buffer and buffer_id:
-            #self.logger.info("[+] add flow datapath={},buffer_id={},priority={},match_config={},instructions={}".format(datapath,buffer_id,priority,match_config,inst))
-            mod = parser.OFPFlowMod(datapath=datapath, buffer_id=buffer_id,
-                                    priority=priority, match=match,
-                                    instructions=inst, hard_timeout=hard_timeout)
-        else:
-            #self.logger.info("[+] add flow datapath={},buffer_id={},priority={},match_config={},instructions={}".format(datapath,buffer_id,priority,match_config,inst))
-            if no_buffer:
-                mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
-                                        match=match, instructions=inst)
-            else:
-                mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
-                                    match=match, instructions=inst, hard_timeout=hard_timeout)
-        datapath.send_msg(mod)
-
-
-    def del_flow(self, datapath, match, cookie=0, priority=0):
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-
-        msg = parser.OFPFlowMod(
-            datapath=datapath,
-            match=match,
-            cookie=cookie,
-            command=ofproto.OFPFC_DELETE,
-            priority=priority,
-        )
-        datapath.send_msg(msg)
 
     ##### Packet-In Handler #####
 
@@ -227,11 +114,9 @@ class MitigateSwitch13(app_manager.RyuApp):
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocols(ethernet.ethernet)[0]
         pkt_ipv4 = pkt.get_protocol(ipv4.ipv4)
-        #self.logger.info("[*] {}".format(pkt))
 
-        # Filtering
+        # Filtering( ignore lldp packet )
         if eth.ethertype == ether_types.ETH_TYPE_LLDP:
-            # ignore lldp packet
             return
 
         #Learning
@@ -241,7 +126,7 @@ class MitigateSwitch13(app_manager.RyuApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        #self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
+        self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = in_port
@@ -256,8 +141,6 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         # ARP (ARP Floodをフローエントリに追加したらダメ)
         if out_port != ofproto.OFPP_FLOOD:
-            #self.add_allow_arp_flow_rule(datapath, in_port, dst, actions)
-            #テスト中
             self.flow_mod_helper.add_normal_arp(datapath, in_port, dst, actions)
 
         # Filtering 2
@@ -275,25 +158,6 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         # install a flow to avoid packet_in next time
         if out_port != ofproto.OFPP_FLOOD:
-            # if in_port != self.NAT_IN_PORT:
-            #     match_rule = self.detect_match_rule.copy()
-            # else:
-            #     match_rule = {}
-            # match_rule.update({'in_port': in_port, 'eth_dst':dst})
-            #
-            # # Managerに追加
-            # match = parser.OFPMatch(**match_rule)
-            # verify if we have a valid buffer_id, if yes avoid to send both
-            # flow_mod & packet_out
-            # if msg.buffer_id != ofproto.OFP_NO_BUFFER:
-            #     #self.logger.info("[+] add_flow with buffer_id")
-            #     #IP Check
-            #     self.add_flow(datapath, 100, match, match_rule, actions, msg.buffer_id)
-            #     return
-            # else:
-            #     #self.logger.info("[+] add_flow")
-            #     #IP Check
-            #     self.add_flow(datapath, 100, match, match_rule, actions)
             is_nat = in_port == self.NAT_IN_PORT
             self.flow_mod_helper.add_normal_packet_in(datapath, in_port, out_port,
                                                       dst, buffer_id=msg.buffer_id, nat=is_nat)
@@ -307,8 +171,5 @@ class MitigateSwitch13(app_manager.RyuApp):
             self.logger.info("    Ignore this packet.")
             return
 
-        # out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
-        #                           in_port=in_port, actions=actions, data=data)
-        # datapath.send_msg(out)
         self.flow_mod_helper.normal_packet_out(datapath, msg.buffer_id, in_port,
                                                actions, data)

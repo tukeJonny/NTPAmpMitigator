@@ -5,7 +5,6 @@ import struct
 import ipaddress
 
 from ryu.ofproto import ether
-from ryu.ofproto.ofproto_v1_3_parser import OFPInstruction
 
 class FlowModHelper(object):
 
@@ -15,6 +14,7 @@ class FlowModHelper(object):
             'eth_type': ether.ETH_TYPE_IP,
             'ipv4_src': self.subnet,
         }
+
         self.NORMAL_TABLE = 0
         self.MISS_TABLE = 1
 
@@ -80,7 +80,6 @@ class FlowModHelper(object):
 
     # Initialize
     def init_flow_table(self, datapath):
-        ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
         # Table-miss GotoTable
@@ -89,9 +88,6 @@ class FlowModHelper(object):
         self.add_flow(datapath, 0, match, inst, inst=True)
 
         # Table-miss Packet-In (table_id=1)
-        # actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-        #                                   ofproto.OFPCML_NO_BUFFER)]
-        # self.add_flow(datapath, 0, match, actions, table_id=self.MISS_TABLE)
         self.add_table_miss_packet_in(datapath)
 
     # Mitigate Entry & Mitigate Exit
@@ -103,19 +99,9 @@ class FlowModHelper(object):
         :param datapath:
         :return:
         """
-        #Table-miss パケインを削除
-        #print("[DEBUG] Delete Table-miss Packet-In")
-        #self.del_table_miss_packet_in(datapath)
-
         self.del_all_flow(datapath, self.MISS_TABLE)
 
-        #
-        #time.sleep(15)
-        print("[DEBUG] Add Table-miss Drop")
         self.add_table_miss_drop(datapath)
-
-        #time.sleep(15)
-        print("[DEBUG] Add ipv4_src check Packet-In")
         self.add_check_packet_in(datapath)
 
     def change_flow_mitigate_exit(self, datapath):
@@ -127,16 +113,6 @@ class FlowModHelper(object):
         """
         self.del_all_flow(datapath, table_id=self.MISS_TABLE)
 
-        #time.sleep(15)
-        # print("[DEBUG] Delete Table-miss Drop")
-        # self.del_table_miss_drop(datapath)
-        #
-        # #time.sleep(15)
-        # print("[DEBUG] Delete ipv4_src check Packet-In")
-        # self.del_check_packet_in(datapath)
-
-        #time.sleep(15)
-        print("[DEBUG] Add Table-miss Packet-In")
         self.add_table_miss_packet_in(datapath)
 
     ## Packet-In
