@@ -78,7 +78,7 @@ class FlowModHelper(object):
         print("[DEBUG] Add Table-miss Drop")
         self.add_table_miss_drop(datapath)
 
-        time.sleep(15)
+        #time.sleep(15)
         print("[DEBUG] Add ipv4_src check Packet-In")
         self.add_check_packet_in(datapath)
 
@@ -89,11 +89,11 @@ class FlowModHelper(object):
         :param datapath:
         :return:
         """
-        time.sleep(15)
+        #time.sleep(15)
         print("[DEBUG] Delete Table-miss Drop")
         self.del_table_miss_drop(datapath)
 
-        time.sleep(15)
+        #time.sleep(15)
         print("[DEBUG] Delete ipv4_src check Packet-In")
         self.del_check_packet_in(datapath)
 
@@ -140,8 +140,8 @@ class FlowModHelper(object):
         ofproto = datapath.ofproto
 
         match = parser.OFPMatch(**self.detect_match_rule)
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER),
-                   ofproto.OFPCML_NO_BUFFER]
+        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                   ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 50, match, actions)
 
     def del_check_packet_in(self, datapath):
