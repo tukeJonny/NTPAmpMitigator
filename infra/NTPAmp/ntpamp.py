@@ -146,7 +146,7 @@ def argument_parse():
     parser.add_argument('-w', '--warmup', action='store_true', help='Execute warmup')
     parser.add_argument('-s', '--single', action='store_true', help='Execute single get_monlist')
     parser.add_argument('-v', '--victim',  type=str, help='Victim IP Address', default='192.168.179.15')
-    parser.add_argument('-t', '--time', type=int, help='time to calculate for attacking (sec. default 300 sec.)', default=300)
+    parser.add_argument('-t', '--time', type=int, help='time to calculate for attacking (sec. default 1800 sec.)', default=1800)
     parser.add_argument('-n', '--nthreads',type=int, help='Number of threads (default 1)', default=32)
     parser.add_argument('-f', '--fpath', type=str, help='NTP Servers entry file path (default ./ntpservs.txt)', default='./ntpservs.txt')
     parser.add_argument('--sport', type=int, help='Source port. this port is victim port. (default 8080)', default=8080)

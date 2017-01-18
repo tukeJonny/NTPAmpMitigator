@@ -12,7 +12,10 @@ try:
 except:
     from requests.exceptions import Timeout
     MyTimeoutException=Timeout
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 
 class StaticGraph(object):
     def __init__(self, elapsed_times, timeout):
@@ -31,7 +34,6 @@ class StaticGraph(object):
         plt.ylabel("elapsed time [sec]")
         plt.xlim([1,len(self.elapsed['x'])])
         plt.ylim([0,self.timeout['y'][0]+1])
-        plt.yticks(0.1)
         plt.legend(loc='upper right')
         plt.grid()
         plt.plot(self.timeout['x'],self.timeout['y'], color='r')
@@ -132,8 +134,8 @@ class HTTPTest(object):
 def parse_argument():
     parser = argparse.ArgumentParser(description='ping like HTTP GET tester.')
     parser.add_argument("-u", "--url", type=str, help='Request to this url.', default="http://www.yahoo.co.jp/")
-    parser.add_argument("-c", "--count", type=int, help='HTTP GET test count.', default=3)
-    parser.add_argument("-t", "--timeout", type=int, help='Request timeout limit.', default=5)
+    parser.add_argument("-c", "--count", type=int, help='HTTP GET test count.', default=2000)
+    parser.add_argument("-t", "--timeout", type=int, help='Request timeout limit.', default=1)
     args = parser.parse_args()
     return args
 
