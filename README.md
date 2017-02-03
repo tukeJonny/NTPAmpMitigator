@@ -1,5 +1,5 @@
 # NTP amp attack mitigator
-CentOS7 base
+CentOS7
 
 # Build
 ## Mininet VM (Official mininet vm)
