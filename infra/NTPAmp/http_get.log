@@ -1,0 +1,37 @@
+2017-01-20 01:46:05,714 - HTTPTest - INFO - [+] Start 30 times HTTP GET Test to http://www.yahoo.co.jp/!
+2017-01-20 01:46:05,857 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.120745[sec]
+2017-01-20 01:46:07,001 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.135423[sec]
+2017-01-20 01:46:08,149 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.139065[sec]
+2017-01-20 01:46:09,279 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.118957[sec]
+2017-01-20 01:46:10,413 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.125437[sec]
+2017-01-20 01:46:11,605 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.132722[sec]
+2017-01-20 01:46:12,741 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.128554[sec]
+2017-01-20 01:46:13,890 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.142996[sec]
+2017-01-20 01:46:15,019 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.120463[sec]
+2017-01-20 01:46:16,159 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.133481[sec]
+2017-01-20 01:46:17,320 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.151746[sec]
+2017-01-20 01:46:18,476 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.14613[sec]
+2017-01-20 01:46:19,660 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.176175[sec]
+2017-01-20 01:46:20,813 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.144081[sec]
+2017-01-20 01:46:21,999 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.134297[sec]
+2017-01-20 01:46:23,115 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.111722[sec]
+2017-01-20 01:46:24,269 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.134177[sec]
+2017-01-20 01:46:25,399 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.119563[sec]
+2017-01-20 01:46:26,560 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.148868[sec]
+2017-01-20 01:46:27,691 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.123543[sec]
+2017-01-20 01:46:28,815 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.113194[sec]
+2017-01-20 01:46:29,979 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.152786[sec]
+2017-01-20 01:46:31,120 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.134205[sec]
+2017-01-20 01:46:32,719 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.125651[sec]
+2017-01-20 01:46:33,882 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.148436[sec]
+2017-01-20 01:46:35,019 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.127685[sec]
+2017-01-20 01:46:36,156 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.127696[sec]
+2017-01-20 01:46:37,295 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.13153[sec]
+2017-01-20 01:46:39,266 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.502957[sec]
+2017-01-20 01:46:40,400 - HTTPTest - INFO - [200] from http://www.yahoo.co.jp/: Time= 0.122686[sec]
+2017-01-20 01:46:41,400 - HTTPTest - INFO - +++++ HTTP GET Tester Statics +++++
+2017-01-20 01:46:41,400 - HTTPTest - INFO - Send: 30
+2017-01-20 01:46:41,401 - HTTPTest - INFO - Recv: 30
+2017-01-20 01:46:41,401 - HTTPTest - INFO - Loss: 0
+2017-01-20 01:46:41,401 - HTTPTest - INFO - 0% Packet Loss
+2017-01-20 01:46:41,401 - HTTPTest - INFO - +++++++++++++++++++++++++++++++++++
