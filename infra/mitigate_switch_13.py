@@ -28,7 +28,7 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ipv4 as ipv4
 from ryu.lib.packet import ether_types
 
-from flow_msg_utils import is_ipv4_belongs_to_network
+from utils import is_ipv4_belongs_to_network
 from flow_msg_utils import FlowModHelper
 
 class MitigateSwitch13(app_manager.RyuApp):
@@ -95,8 +95,8 @@ class MitigateSwitch13(app_manager.RyuApp):
 
         self.flow_mod_helper.change_flow_mitigate_exit(datapath)
 
-        self.logger.info("[-] Mitigate Exit (MITIGATE_MODE = {})".format(self.MITIGATE_MODE))
         self.MITIGATE_MODE = False
+        self.logger.info("[-] Mitigate Exit (MITIGATE_MODE = {})".format(self.MITIGATE_MODE))
 
     ##### Packet-In Handler #####
 

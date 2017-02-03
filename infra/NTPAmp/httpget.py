@@ -81,16 +81,19 @@ class HTTPTest(object):
 
         self.logger = logging.getLogger("HTTPTest")
         self.logger.setLevel(logging.DEBUG)
+
+        # File
         handler = logging.FileHandler('http_get.log', mode='w')
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
 
-    @staticmethod
-    def print_progress(s):
-        sys.stdout.write('\r'+s)
-        sys.stdout.flush()
+        #Stdout
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.DEBUG)
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
 
     def do_get(self):
         """
@@ -128,7 +131,6 @@ class HTTPTest(object):
         for i in range(self.count):
             self.do_get()
             time.sleep(self.INTERVAL)
-            self.print_progress("{}%".format((i/self.count)*100))
         self.display_statics()
 
 def parse_argument():
