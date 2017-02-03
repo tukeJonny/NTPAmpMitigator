@@ -5,7 +5,7 @@ CentOS7 base
 ## Mininet VM (Official mininet vm)
 
 ## Docker VM (docker-compose)
-### Docker
+### Docker install
 ```bash
 yum install docker
 systemctl enable docker
