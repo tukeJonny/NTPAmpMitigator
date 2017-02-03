@@ -1,5 +1,5 @@
 # NTP amp attack mitigator
-use CentOS7
+CentOS7 base
 
 # Build
 ## Mininet VM (Official mininet vm)
