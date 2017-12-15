@@ -2,7 +2,7 @@
 
 
 [zabbix]
-133.242.234.156
+xxx.xxx.xxx.xxx
 
 [zabbix:vars]
 ansible_ssh_user=root
